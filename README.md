@@ -12,7 +12,9 @@
 <li>ram_gb — объём оперативной памяти, ГБ</li>
 <li>storage_gb — доступное дисковое пространство, ГБ</li>
 <li>monthly_price — базовая стоимость тарифа за месяц</li>
-<li>provider — облачный провайдер: AWS, Google Cloud, Azure, Яндекс Cloud, SberCloud и т. п</li></ol>
+<li>provider — облачный провайдер: AWS, Google Cloud, Azure, Яндекс Cloud, SberCloud и т. п</li>
+<li>video — видеозаставка</li>
+<li>card_photo — фото для карточки</li></ol>
 
 Таблица HostingRequests — заявка:
 <ol>
