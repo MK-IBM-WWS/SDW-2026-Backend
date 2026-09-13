@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тарифы облачного хостинга</title>
+    <link rel="stylesheet" href="/static/styles/style.css">
+</head>
+<body>
+    <div class="phone phone--pattern">
+        <header class="page-header">
+            <h1 class="page-header__title">Тарифы</h1>
+        </header>
+
+        <form class="filter" action="/tariffs" method="GET">
+            <label class="visually-hidden" for="priceLimit">Максимальная цена за месяц</label>
+            <select class="filter__select" id="priceLimit" name="priceLimit">
+                <option value="" {{ if eq .priceLimit "" }}selected{{ end }}>Фильтр по цене не задан</option>
+                <option value="1000" {{ if eq .priceLimit "1000" }}selected{{ end }}>До 1 000 ₽ за месяц</option>
+                <option value="10000" {{ if eq .priceLimit "10000" }}selected{{ end }}>До 10 000 ₽ за месяц</option>
+                <option value="500000" {{ if eq .priceLimit "500000" }}selected{{ end }}>До 500 000 ₽ за месяц</option>
+            </select>
+            <button class="filter__button" type="submit" aria-label="Применить фильтр">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.15A7.5 7.5 0 1 1 4 11.5a7.5 7.5 0 0 1 15 0Z"/></svg>
+            </button>
+        </form>
+
+        <main class="tiles">
+            {{ range .tariffs }}
+            <a class="tile" href="/tariffs/feed/{{ .TariffID }}">
+                <img class="tile__image" src="{{ .ImageURL }}" alt="{{ .TariffName }}">
+                <div class="tile__body">
+                    <h2 class="tile__name">{{ .TariffName }}</h2>
+                    <p class="tile__price">{{ .PricePerMonth }} ₽ / месяц</p>
+                    <span class="tile__likes" aria-label="Количество лайков">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21S4 16.4 4 10.8A4.6 4.6 0 0 1 12 7.7a4.6 4.6 0 0 1 8 3.1C20 16.4 12 21 12 21Z"/></svg>
+                        {{ .LikeCount }}
+                    </span>
+                    <span class="tile__open" aria-hidden="true">›</span>
+                </div>
+            </a>
+            {{ else }}
+            <p class="empty-state">По выбранной цене тарифы не найдены.</p>
+            {{ end }}
+        </main>
+
+        {{ template "tabbar.html" . }}
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .tariff.TariffName }}</title>
+    <link rel="stylesheet" href="/static/styles/style.css">
+</head>
+<body>
+    <div class="phone">
+        <main class="feed">
+            <video class="feed__video" autoplay muted loop playsinline preload="auto">
+                <source src="{{ .tariff.VideoURL }}" type="video/mp4">
+                Ваш браузер не поддерживает воспроизведение видео.
+            </video>
+            <div class="feed__overlay" aria-hidden="true"></div>
+
+            <section class="feed__content">
+                <h1 class="feed__title">{{ .tariff.TariffName }}</h1>
+
+                <div class="feed__ram" aria-label="Оперативная память: {{ .tariff.RAMGB }} гигабайт">
+                    <span class="feed__ram-icon-wrap" aria-hidden="true">
+                        <span class="feed__ram-icon-frame">
+                            <img class="feed__ram-icon" src="/static/images/ram.png" alt="">
+                        </span>
+                        <span class="feed__ram-label">RAM</span>
+                    </span>
+                    <strong class="feed__ram-value">{{ .tariff.RAMGB }} GB</strong>
+                </div>
+
+                <details class="feed__details">
+                    <summary>
+                        <span class="feed__description-preview">{{ .tariff.DescriptionPreview }}</span>
+                        <span class="feed__more">ещё...</span>
+                        <span class="feed__less">свернуть</span>
+                    </summary>
+                    <p class="feed__description-full">{{ .tariff.ShortDescription }}</p>
+                </details>
+
+                <p class="feed__price">{{ .tariff.PricePerMonth }} ₽ / месяц</p>
+            </section>
+
+            <aside class="feed__actions" aria-label="Действия с тарифом">
+                <div class="feed__likes">
+                    <button class="feed__like-button" type="button" aria-label="Поставить лайк">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11z"/>
+                        </svg>
+                    </button>
+                    <strong aria-label="Лайков: {{ .tariff.LikeCount }}">{{ .tariff.LikeCount }}</strong>
+                </div>
+
+                <a class="feed__next" href="/tariffs/feed/{{ .tariff.TariffID }}?next=true" aria-label="Следующий тариф">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M5 12h14M14 7l5 5-5 5"/>
+                    </svg>
+                </a>
+            </aside>
+        </main>
+
+        {{ template "tabbar.html" . }}
+    </div>
+</body>
+</html>

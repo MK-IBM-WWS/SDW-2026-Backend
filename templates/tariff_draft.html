@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Черновик тарифа</title>
+    <link rel="stylesheet" href="/static/styles/style.css">
+</head>
+<body>
+    <div class="phone phone--pattern">
+        <header class="page-header page-header--draft">
+            <h1 class="page-header__title">Тариф</h1>
+            <span class="draft-status">{{ .tariff.TariffStatus }}</span>
+        </header>
+
+        <main class="draft">
+            <div class="draft__media-grid">
+                <section class="media-field">
+                    <label class="draft__label" for="image">Фото</label>
+                    <label class="media-field__preview" for="image">
+                        <img src="{{ .tariff.ImageURL }}" alt="Фото черновика {{ .tariff.TariffName }}">
+                        <span>Выбрать</span>
+                    </label>
+                    <input class="visually-hidden" id="image" type="file" accept="image/*">
+                </section>
+
+                <section class="media-field">
+                    <label class="draft__label" for="video">Видео</label>
+                    <label class="media-field__preview" for="video">
+                        <video src="{{ .tariff.VideoURL }}" poster="{{ .tariff.ImageURL }}" muted playsinline></video>
+                        <span>Выбрать</span>
+                    </label>
+                    <input class="visually-hidden" id="video" type="file" accept="video/*">
+                </section>
+            </div>
+
+            <label class="draft__label" for="name">Название</label>
+            <input class="draft__input" id="name" type="text" value="{{ .tariff.TariffName }}">
+
+            <label class="draft__label" for="description">Описание</label>
+            <textarea class="draft__input draft__input--area" id="description" rows="3">{{ .tariff.ShortDescription }}</textarea>
+
+            <div class="draft__two-columns">
+                <div>
+                    <label class="draft__label" for="price">Цена, ₽ / месяц</label>
+                    <input class="draft__input" id="price" type="number" min="0" value="{{ .tariff.PricePerMonth }}">
+                </div>
+                <div>
+                    <label class="draft__label" for="ram">RAM, GB</label>
+                    <input class="draft__input" id="ram" type="number" min="1" value="{{ .tariff.RAMGB }}">
+                </div>
+            </div>
+
+        </main>
+
+        {{ template "tabbar.html" . }}
+    </div>
+</body>
+</html>
