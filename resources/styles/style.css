@@ -126,7 +126,7 @@ label[for] {
     position: fixed;
     left: 50%;
     bottom: 0;
-    z-index: 20;
+    z-index: 1000;
     width: min(100%, var(--phone-width));
     height: var(--tabbar-height);
     transform: translateX(-50%);
@@ -258,14 +258,20 @@ label[for] {
 }
 
 .tile {
+    position: relative;
     min-width: 0;
     overflow: hidden;
     color: var(--color-text);
-    text-decoration: none;
     background: rgba(0, 0, 0, 0.56);
     border: 2px solid var(--color-border);
     border-radius: var(--card-radius);
     transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.tile__link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
 }
 
 .tile:hover,
@@ -338,6 +344,46 @@ label[for] {
     border-radius: 50%;
     font-size: 26px;
     line-height: 1;
+}
+
+.tile__delete-form {
+    position: absolute;
+    top: 11px;
+    right: 11px;
+    z-index: 3;
+    margin: 0;
+}
+
+.tile__delete {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
+}
+
+.tile__delete:hover,
+.tile__delete:focus-visible {
+    color: #160000;
+    background: #ff7777;
+    border-color: #ff7777;
+    outline: none;
+}
+
+.tile__delete svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .empty-state {
@@ -533,7 +579,6 @@ label[for] {
     color: #ffffff;
     background: transparent;
     border: 0;
-    cursor: default;
 }
 
 .feed__like-button svg {
@@ -582,6 +627,17 @@ label[for] {
 /* Страница черновика */
 .draft {
     padding: 4px 24px calc(var(--tabbar-height) + 28px);
+}
+
+.draft__hint {
+    margin: 0 0 18px;
+    padding: 11px 12px;
+    color: var(--color-muted);
+    background: rgba(0, 0, 0, 0.46);
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    border-radius: var(--control-radius);
+    font-size: 12px;
+    line-height: 1.45;
 }
 
 .draft__media-grid,
@@ -646,6 +702,26 @@ label[for] {
 .draft__input--area {
     min-height: 88px;
     resize: vertical;
+}
+
+.draft__submit {
+    width: 100%;
+    min-height: 46px;
+    margin-top: 2px;
+    color: #06171a;
+    background: var(--color-accent);
+    border: 0;
+    border-radius: var(--control-radius);
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.draft__submit:hover,
+.draft__submit:focus-visible {
+    background: var(--color-accent-hover);
+    transform: translateY(-2px);
+    outline: none;
 }
 
 @media (max-width: 380px) {

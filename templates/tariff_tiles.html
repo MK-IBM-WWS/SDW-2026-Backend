@@ -27,7 +27,8 @@
 
         <main class="tiles">
             {{ range .tariffs }}
-            <a class="tile" href="/tariffs/feed/{{ .TariffID }}">
+            <article class="tile">
+                <a class="tile__link" href="/tariffs/feed?id={{ .TariffID }}">
                 <img class="tile__image" src="{{ .ImageURL }}" alt="{{ .TariffName }}">
                 <div class="tile__body">
                     <h2 class="tile__name">{{ .TariffName }}</h2>
@@ -38,7 +39,16 @@
                     </span>
                     <span class="tile__open" aria-hidden="true">›</span>
                 </div>
-            </a>
+                </a>
+                <form class="tile__delete-form" action="/tariffs/delete" method="POST">
+                    <input type="hidden" name="tariff_id" value="{{ .TariffID }}">
+                    <button class="tile__delete" type="submit" aria-label="Удалить тариф {{ .TariffName }}" title="Логически удалить тариф">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 7h16M9 7V4h6v3m-8 0 1 14h8l1-14M10 11v6m4-6v6"/>
+                        </svg>
+                    </button>
+                </form>
+            </article>
             {{ else }}
             <p class="empty-state">По выбранной цене тарифы не найдены.</p>
             {{ end }}
@@ -48,4 +58,3 @@
     </div>
 </body>
 </html>
-

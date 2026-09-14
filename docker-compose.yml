@@ -12,3 +12,33 @@ services:
     volumes:
       - ./minio-data:/data
     command: server /data --console-address ":9001"
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: cloud-tariffs-postgres
+    environment:
+      POSTGRES_USER: cloud_user
+      POSTGRES_PASSWORD: cloud_password
+      POSTGRES_DB: cloud_tariffs
+    ports:
+      - "666:5432"
+    volumes:
+      - cloud_tariffs_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloud_user -d cloud_tariffs"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  adminer:
+    image: adminer:5
+    container_name: cloud-tariffs-adminer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+
+volumes:
+  cloud_tariffs_postgres_data:
+

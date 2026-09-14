@@ -41,16 +41,16 @@
             </section>
 
             <aside class="feed__actions" aria-label="Действия с тарифом">
-                <div class="feed__likes">
-                    <button class="feed__like-button" type="button" aria-label="Поставить лайк">
+                <div class="feed__likes" aria-label="Лайков: {{ .tariff.LikeCount }}">
+                    <span class="feed__like-button" aria-hidden="true">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11z"/>
                         </svg>
-                    </button>
-                    <strong aria-label="Лайков: {{ .tariff.LikeCount }}">{{ .tariff.LikeCount }}</strong>
+                    </span>
+                    <strong>{{ .tariff.LikeCount }}</strong>
                 </div>
 
-                <a class="feed__next" href="/tariffs/feed/{{ .tariff.TariffID }}?next=true" aria-label="Следующий тариф">
+                <a class="feed__next" href="/tariffs/feed?id={{ .tariff.TariffID }}&amp;next=true" aria-label="Следующий тариф">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M5 12h14M14 7l5 5-5 5"/>
                     </svg>

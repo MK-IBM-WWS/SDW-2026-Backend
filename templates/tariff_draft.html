@@ -3,54 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Черновик тарифа</title>
+    <title>{{ if .hasDraft }}Публикация тарифа{{ else }}Добавление тарифа{{ end }}</title>
     <link rel="stylesheet" href="/static/styles/style.css">
 </head>
 <body>
     <div class="phone phone--pattern">
         <header class="page-header page-header--draft">
             <h1 class="page-header__title">Тариф</h1>
-            <span class="draft-status">{{ .tariff.TariffStatus }}</span>
+            <span class="draft-status">{{ if .hasDraft }}{{ .tariff.TariffStatus }}{{ else }}новый{{ end }}</span>
         </header>
 
         <main class="draft">
-            <div class="draft__media-grid">
-                <section class="media-field">
-                    <label class="draft__label" for="image">Фото</label>
-                    <label class="media-field__preview" for="image">
-                        <img src="{{ .tariff.ImageURL }}" alt="Фото черновика {{ .tariff.TariffName }}">
-                        <span>Выбрать</span>
-                    </label>
-                    <input class="visually-hidden" id="image" type="file" accept="image/*">
-                </section>
+            {{ if .hasDraft }}
+            <p class="draft__hint">Черновик уже создан. Проверьте медиа, заполните описание, цену и RAM, затем опубликуйте тариф.</p>
 
-                <section class="media-field">
-                    <label class="draft__label" for="video">Видео</label>
-                    <label class="media-field__preview" for="video">
-                        <video src="{{ .tariff.VideoURL }}" poster="{{ .tariff.ImageURL }}" muted playsinline></video>
-                        <span>Выбрать</span>
-                    </label>
-                    <input class="visually-hidden" id="video" type="file" accept="video/*">
-                </section>
-            </div>
+            <form action="/tariffs/publish" method="POST">
+                <input type="hidden" name="tariff_id" value="{{ .tariff.TariffID }}">
 
-            <label class="draft__label" for="name">Название</label>
-            <input class="draft__input" id="name" type="text" value="{{ .tariff.TariffName }}">
+                <div class="draft__media-grid">
+                    <section class="media-field">
+                        <span class="draft__label">Фото</span>
+                        <div class="media-field__preview">
+                            <img src="{{ .tariff.ImageURL }}" alt="Фото черновика {{ .tariff.TariffName }}">
+                            <span>Из MinIO</span>
+                        </div>
+                    </section>
 
-            <label class="draft__label" for="description">Описание</label>
-            <textarea class="draft__input draft__input--area" id="description" rows="3">{{ .tariff.ShortDescription }}</textarea>
-
-            <div class="draft__two-columns">
-                <div>
-                    <label class="draft__label" for="price">Цена, ₽ / месяц</label>
-                    <input class="draft__input" id="price" type="number" min="0" value="{{ .tariff.PricePerMonth }}">
+                    <section class="media-field">
+                        <span class="draft__label">Видео</span>
+                        <div class="media-field__preview">
+                            <video src="{{ .tariff.VideoURL }}" poster="{{ .tariff.ImageURL }}" muted playsinline></video>
+                            <span>Из MinIO</span>
+                        </div>
+                    </section>
                 </div>
-                <div>
-                    <label class="draft__label" for="ram">RAM, GB</label>
-                    <input class="draft__input" id="ram" type="number" min="1" value="{{ .tariff.RAMGB }}">
-                </div>
-            </div>
 
+                <label class="draft__label" for="name">Название</label>
+                <input class="draft__input" id="name" name="tariff_name" type="text" maxlength="100" required value="{{ .tariff.TariffName }}">
+
+                <label class="draft__label" for="image_url">URL фото из MinIO</label>
+                <input class="draft__input" id="image_url" name="image_url" type="url" maxlength="500" required value="{{ .tariff.ImageURL }}">
+
+                <label class="draft__label" for="video_url">URL видео из MinIO</label>
+                <input class="draft__input" id="video_url" name="video_url" type="url" maxlength="500" required value="{{ .tariff.VideoURL }}">
+
+                <label class="draft__label" for="description">Краткое описание</label>
+                <textarea class="draft__input draft__input--area" id="description" name="short_description" maxlength="500" rows="3" required>{{ .tariff.ShortDescription }}</textarea>
+
+                <div class="draft__two-columns">
+                    <div>
+                        <label class="draft__label" for="price">Цена, ₽ / месяц</label>
+                        <input class="draft__input" id="price" name="price_per_month" type="number" min="0" required value="{{ .tariff.PricePerMonth }}">
+                    </div>
+                    <div>
+                        <label class="draft__label" for="ram">RAM, GB</label>
+                        <input class="draft__input" id="ram" name="ram_gb" type="number" min="1" required value="{{ .tariff.RAMGB }}">
+                    </div>
+                </div>
+
+                <button class="draft__submit" type="submit">Опубликовать</button>
+            </form>
+            {{ else }}
+            <p class="draft__hint">Черновика пока нет. Укажите название и прямые URL объектов из MinIO. Запись появится в БД только после нажатия «Далее».</p>
+
+            <form action="/tariffs/draft" method="POST">
+                <label class="draft__label" for="name">Название</label>
+                <input class="draft__input" id="name" name="tariff_name" type="text" maxlength="100" required placeholder="Например, Selectel Start">
+
+                <label class="draft__label" for="image_url">URL фото из MinIO</label>
+                <input class="draft__input" id="image_url" name="image_url" type="url" maxlength="500" required placeholder="http://localhost:9000/cloud-tariffs/tariff.jpg">
+
+                <label class="draft__label" for="video_url">URL видео из MinIO</label>
+                <input class="draft__input" id="video_url" name="video_url" type="url" maxlength="500" required placeholder="http://localhost:9000/cloud-tariffs/tariff.mp4">
+
+                <button class="draft__submit" type="submit">Далее</button>
+            </form>
+            {{ end }}
         </main>
 
         {{ template "tabbar.html" . }}
