@@ -1,11 +1,11 @@
 -- Выполните этот файл через пункт «SQL-запрос» в Adminer после миграции.
 -- Скрипт можно запускать повторно: ON CONFLICT не создаёт дубликаты.
 
-INSERT INTO users (user_id, login, password_hash, is_moderator, created_at)
+INSERT INTO users (user_id, login, password_hash, is_moderator)
 VALUES
-    (1, 'student', 'lab2-password-not-for-production', false, NOW()),
-    (2, 'moderator', 'lab2-password-not-for-production', true, NOW()),
-    (3, 'guest', 'lab2-password-not-for-production', false, NOW())
+    (1, 'student', 'lab2-password-not-for-production', false),
+    (2, 'moderator', 'lab2-password-not-for-production', true),
+    (3, 'guest', 'lab2-password-not-for-production', false)
 ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO cloud_tariffs (
@@ -102,13 +102,13 @@ VALUES
     )
 ON CONFLICT (tariff_id) DO NOTHING;
 
-INSERT INTO user_tariff_likes (like_id, user_id, tariff_id, created_at)
+INSERT INTO user_tariff_likes (like_id, user_id, tariff_id)
 VALUES
-    (1, 1, 2, NOW()),
-    (2, 2, 1, NOW()),
-    (3, 3, 1, NOW()),
-    (4, 3, 3, NOW()),
-    (5, 1, 4, NOW())
+    (1, 1, 2),
+    (2, 2, 1),
+    (3, 3, 1),
+    (4, 3, 3),
+    (5, 1, 4)
 ON CONFLICT (like_id) DO NOTHING;
 
 -- Синхронизация последовательностей после явного задания ID.

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарифы облачного хостинга</title>
-    <link rel="stylesheet" href="/static/styles/style.css">
+    <link rel="stylesheet" href="/static/styles/style.css?v=3">
 </head>
 <body>
     <div class="phone phone--pattern">
@@ -13,16 +13,11 @@
         </header>
 
         <form class="filter" action="/tariffs" method="GET">
-            <label class="visually-hidden" for="priceLimit">Максимальная цена за месяц</label>
-            <select class="filter__select" id="priceLimit" name="priceLimit">
-                <option value="" {{ if eq .priceLimit "" }}selected{{ end }}>Фильтр по цене не задан</option>
-                <option value="1000" {{ if eq .priceLimit "1000" }}selected{{ end }}>До 1 000 ₽ за месяц</option>
-                <option value="10000" {{ if eq .priceLimit "10000" }}selected{{ end }}>До 10 000 ₽ за месяц</option>
-                <option value="500000" {{ if eq .priceLimit "500000" }}selected{{ end }}>До 500 000 ₽ за месяц</option>
-            </select>
-            <button class="filter__button" type="submit" aria-label="Применить фильтр">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.15A7.5 7.5 0 1 1 4 11.5a7.5 7.5 0 0 1 15 0Z"/></svg>
-            </button>
+            <div class="filter__range-wrap">
+                <label class="filter__label" for="priceStep">Максимальная цена: <strong id="priceCaption"></strong></label>
+                <input class="filter__range" id="priceStep" type="range" min="0" max="3" step="1" value="{{ if eq .priceLimit "1000" }}1{{ else if eq .priceLimit "10000" }}2{{ else if eq .priceLimit "500000" }}3{{ else }}0{{ end }}">
+                <input id="priceLimit" name="priceLimit" type="hidden" value="{{ .priceLimit }}">
+            </div>
         </form>
 
         <main class="tiles">
@@ -56,5 +51,6 @@
 
         {{ template "tabbar.html" . }}
     </div>
+    <script src="/static/scripts/price-filter.js?v=3" defer></script>
 </body>
 </html>

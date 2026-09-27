@@ -26,6 +26,15 @@ func main() {
 	if err := db.AutoMigrate(&ds.User{}, &ds.CloudTariff{}, &ds.UserTariffLike{}); err != nil {
 		log.Fatalf("не удалось выполнить миграцию: %v", err)
 	}
+	// AutoMigrate сохраняет старые столбцы, поэтому удаляем их и в существующей БД.
+	for _, statement := range []string{
+		"ALTER TABLE users DROP COLUMN IF EXISTS created_at",
+		"ALTER TABLE user_tariff_likes DROP COLUMN IF EXISTS created_at",
+	} {
+		if err := db.Exec(statement).Error; err != nil {
+			log.Fatalf("не удалось удалить ненужные столбцы: %v", err)
+		}
+	}
 
 	if err := db.Exec(`
 		DO $$

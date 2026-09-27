@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -10,34 +11,57 @@ import (
 )
 
 const (
-	defaultFallbackImageURL = "http://localhost:9000/cloud-tariffs/example.jpg"
-	defaultFallbackVideoURL = "http://localhost:9000/cloud-tariffs/example.mp4"
+	defaultMinIOBaseURL = "http://localhost:9000/cloud-tariffs/"
+	fallbackImageURL   = "/static/media/example.jpg"
+	fallbackVideoURL   = "/static/media/example.mp4"
 )
 
 var mediaHTTPClient = &http.Client{Timeout: 2 * time.Second}
 
-// applyMediaFallbacks подставляет стандартные объекты MinIO только для отображения.
-// URL, сохранённые в PostgreSQL, при этом не изменяются.
 func (h *Handler) applyMediaFallbacks(tariff *ds.CloudTariff) {
 	if tariff == nil {
 		return
 	}
 
-	if !mediaExists(tariff.ImageURL) {
-		tariff.ImageURL = fallbackURL("MINIO_FALLBACK_IMAGE_URL", defaultFallbackImageURL)
+	imageURL := minIOURL(tariff.ImageURL)
+	videoURL := minIOURL(tariff.VideoURL)
+	if mediaExists(imageURL) {
+		tariff.ImageURL = imageURL
+	} else {
+		tariff.ImageURL = fallbackImageURL
 	}
-	if !mediaExists(tariff.VideoURL) {
-		tariff.VideoURL = fallbackURL("MINIO_FALLBACK_VIDEO_URL", defaultFallbackVideoURL)
+	if mediaExists(videoURL) {
+		tariff.VideoURL = videoURL
+	} else {
+		tariff.VideoURL = fallbackVideoURL
 	}
 }
 
-func mediaExists(url string) bool {
-	url = strings.TrimSpace(url)
-	if url == "" {
+// Supports old full MinIO URLs and new file names saved in the database.
+func minIOURL(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		return value
+	}
+	if strings.ContainsAny(value, `/\\`) || value == "." || value == ".." {
+		return ""
+	}
+	base := strings.TrimSpace(os.Getenv("MINIO_MEDIA_BASE_URL"))
+	if base == "" {
+		base = defaultMinIOBaseURL
+	}
+	return strings.TrimRight(base, "/") + "/" + url.PathEscape(value)
+}
+
+func mediaExists(mediaURL string) bool {
+	if mediaURL == "" {
 		return false
 	}
 
-	request, err := http.NewRequest(http.MethodHead, url, nil)
+	request, err := http.NewRequest(http.MethodHead, mediaURL, nil)
 	if err != nil {
 		return false
 	}
@@ -49,11 +73,4 @@ func mediaExists(url string) bool {
 	defer response.Body.Close()
 
 	return response.StatusCode >= http.StatusOK && response.StatusCode < http.StatusBadRequest
-}
-
-func fallbackURL(envName, defaultURL string) string {
-	if value := strings.TrimSpace(os.Getenv(envName)); value != "" {
-		return value
-	}
-	return defaultURL
 }

@@ -16,7 +16,6 @@ var (
 	ErrDraftExists    = errors.New("у пользователя уже есть черновик тарифа")
 )
 
-// GetPublishedTariffs получает опубликованные тарифы и число лайков из БД через ORM.
 func (r *Repository) GetPublishedTariffs(maxPrice *int) ([]ds.CloudTariff, error) {
 	var tariffs []ds.CloudTariff
 
@@ -36,7 +35,6 @@ func (r *Repository) GetPublishedTariffs(maxPrice *int) ([]ds.CloudTariff, error
 	return tariffs, nil
 }
 
-// GetPublishedTariff получает одну опубликованную и не удалённую услугу через ORM.
 func (r *Repository) GetPublishedTariff(tariffID uint) (*ds.CloudTariff, error) {
 	var tariff ds.CloudTariff
 	err := r.db.Model(&ds.CloudTariff{}).
@@ -84,8 +82,6 @@ func (r *Repository) GetNextPublishedTariff(afterTariffID uint) (*ds.CloudTariff
 	return &tariff, nil
 }
 
-// GetDraftTariff возвращает только черновик конкретного пользователя.
-// Отсутствие черновика — нормальное состояние, поэтому возвращается nil без ошибки.
 func (r *Repository) GetDraftTariff(creatorID uint) (*ds.CloudTariff, error) {
 	var tariff ds.CloudTariff
 	err := r.db.Where("creator_id = ? AND tariff_status = ?", creatorID, ds.StatusDraft).
@@ -99,7 +95,6 @@ func (r *Repository) GetDraftTariff(creatorID uint) (*ds.CloudTariff, error) {
 	return &tariff, nil
 }
 
-// CreateDraftTariff создаёт черновик через ORM только после нажатия «Далее».
 func (r *Repository) CreateDraftTariff(tariff *ds.CloudTariff) error {
 	var count int64
 	if err := r.db.Model(&ds.CloudTariff{}).
@@ -128,7 +123,6 @@ type PublishTariffInput struct {
 	RAMGB            int
 }
 
-// PublishDraftTariff заполняет предметные поля и меняет статус через ORM.
 func (r *Repository) PublishDraftTariff(input PublishTariffInput) error {
 	formedAt := time.Now()
 	result := r.db.Model(&ds.CloudTariff{}).
@@ -152,7 +146,6 @@ func (r *Repository) PublishDraftTariff(input PublishTariffInput) error {
 	return nil
 }
 
-// DeleteTariff выполняет параметризованный SQL UPDATE через database/sql, без ORM.
 func (r *Repository) DeleteTariff(ctx context.Context, tariffID uint) error {
 	result, err := r.sqlDB.ExecContext(ctx, `
 		UPDATE cloud_tariffs

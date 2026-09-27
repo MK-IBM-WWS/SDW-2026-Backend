@@ -13,7 +13,6 @@ const (
 	StatusDeleted   TariffStatus = "удален"
 )
 
-// CloudTariff — предметная таблица услуг облачного хостинга.
 type CloudTariff struct {
 	TariffID         uint         `gorm:"primaryKey"`
 	TariffName       string       `gorm:"type:varchar(100);not null"`
@@ -27,7 +26,6 @@ type CloudTariff struct {
 	CreatorID        uint         `gorm:"not null;index"`
 	FormedAt         *time.Time
 
-	// Вычисляется SELECT-подзапросом; отдельной колонкой в таблице не является.
 	LikeCount int64 `gorm:"column:like_count;->;-:migration"`
 }
 

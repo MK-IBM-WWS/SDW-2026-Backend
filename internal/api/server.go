@@ -34,8 +34,6 @@ func StartServer() error {
 
 	tariffHandler := handler.NewHandler(repo)
 	router := gin.Default()
-	// Подключаем исходную нижнюю панель и три страницы явно, чтобы общий
-	// шаблон tabbar.html гарантированно загружался вместе с каждой страницей.
 	router.LoadHTMLFiles(
 		"templates/tabbar.html",
 		"templates/tariff_tiles.html",
@@ -44,7 +42,6 @@ func StartServer() error {
 	)
 	router.Static("/static", "./resources")
 
-	// Ровно шесть HTTP-маршрутов по заданию: 3 GET и 3 POST.
 	router.GET("/tariffs", tariffHandler.GetTariffTiles)
 	router.GET("/tariffs/feed", tariffHandler.GetTariffFeed)
 	router.GET("/tariffs/draft", tariffHandler.GetTariffDraft)

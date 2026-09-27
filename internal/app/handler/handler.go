@@ -23,8 +23,6 @@ type Handler struct {
 	Repository *repository.Repository
 }
 
-// Во второй лабораторной авторизации ещё нет, поэтому пользователь временно
-// фиксирован так же, как в примере методических указаний.
 const currentUserID uint = 1
 
 func NewHandler(r *repository.Repository) *Handler {
@@ -113,23 +111,28 @@ func (h *Handler) GetTariffDraft(ctx *gin.Context) {
 		return
 	}
 
-	h.applyMediaFallbacks(tariff)
+	// Keep the database values for the publish form; only the preview may use fallbacks.
+	var preview *ds.CloudTariff
+	if tariff != nil {
+		copy := *tariff
+		h.applyMediaFallbacks(&copy)
+		preview = &copy
+	}
 
 	ctx.HTML(http.StatusOK, "tariff_draft.html", gin.H{
 		"tariff":    tariff,
+		"preview":   preview,
 		"hasDraft":  tariff != nil,
 		"activeTab": "draft",
 	})
 }
 
-// CreateTariffDraft — первый POST через ORM: название и URL медиа сохраняются
-// только при отправке формы кнопкой «Далее».
 func (h *Handler) CreateTariffDraft(ctx *gin.Context) {
 	tariffName := strings.TrimSpace(ctx.PostForm("tariff_name"))
 	imageURL := strings.TrimSpace(ctx.PostForm("image_url"))
 	videoURL := strings.TrimSpace(ctx.PostForm("video_url"))
-	if tariffName == "" || imageURL == "" || videoURL == "" {
-		ctx.String(http.StatusBadRequest, "Название, URL фото и URL видео обязательны")
+	if tariffName == "" || !validMediaName(imageURL) || !validMediaName(videoURL) {
+		ctx.String(http.StatusBadRequest, "Название, имя фото и имя видео обязательны")
 		return
 	}
 
@@ -149,7 +152,6 @@ func (h *Handler) CreateTariffDraft(ctx *gin.Context) {
 	ctx.Redirect(http.StatusSeeOther, "/tariffs/draft")
 }
 
-// PublishTariffDraft — второй POST через ORM: дополняет черновик и публикует его.
 func (h *Handler) PublishTariffDraft(ctx *gin.Context) {
 	tariffID, err := requiredPositiveUint(ctx.PostForm("tariff_id"))
 	if err != nil {
@@ -177,7 +179,7 @@ func (h *Handler) PublishTariffDraft(ctx *gin.Context) {
 		PricePerMonth:    price,
 		RAMGB:            ram,
 	}
-	if input.TariffName == "" || input.ImageURL == "" || input.VideoURL == "" || input.ShortDescription == "" {
+	if input.TariffName == "" || minIOURL(input.ImageURL) == "" || minIOURL(input.VideoURL) == "" || input.ShortDescription == "" {
 		ctx.String(http.StatusBadRequest, "Все поля тарифа обязательны")
 		return
 	}
@@ -195,7 +197,6 @@ func (h *Handler) PublishTariffDraft(ctx *gin.Context) {
 	ctx.Redirect(http.StatusSeeOther, "/tariffs/feed?id="+strconv.FormatUint(uint64(tariffID), 10))
 }
 
-// DeleteTariff — третий POST; репозиторий выполняет сырой SQL UPDATE без ORM.
 func (h *Handler) DeleteTariff(ctx *gin.Context) {
 	tariffID, err := requiredPositiveUint(ctx.PostForm("tariff_id"))
 	if err != nil {
@@ -222,6 +223,10 @@ func requiredPositiveUint(value string) (uint, error) {
 		return 0, errors.New("ожидалось положительное число")
 	}
 	return uint(parsed), nil
+}
+
+func validMediaName(value string) bool {
+	return value != "" && len(value) <= 500 && !strings.ContainsAny(value, `/\\`) && value != "." && value != ".."
 }
 
 func requiredPositiveInt(value string) (int, error) {
