@@ -145,3 +145,80 @@ func TestHTMLTemplatesParse(t *testing.T) {
 		t.Fatalf("template error: %s", b)
 	}
 }
+
+// Feed requests select either one visible card or the next card in the feed.
+type feedRepository struct {
+	Repository
+	selectedID uint
+	operation  string
+	err        error
+}
+
+func (r *feedRepository) GetPublishedTariff(id uint) (*ds.CloudTariff, error) {
+	r.selectedID, r.operation = id, "exact"
+	return &ds.CloudTariff{TariffID: id, TariffStatus: ds.StatusPublished}, r.err
+}
+func (r *feedRepository) GetNextPublishedTariff(id uint) (*ds.CloudTariff, error) {
+	r.selectedID, r.operation = id, "next"
+	return &ds.CloudTariff{TariffID: id + 1, TariffStatus: ds.StatusPublished}, r.err
+}
+func TestFeedQueryModes(t *testing.T) {
+	for _, tc := range []struct {
+		query     string
+		code      int
+		operation string
+		id        uint
+	}{
+		{"", 200, "next", 0},
+		{"?id=7&next=true", 200, "next", 7},
+		{"?next=true&id=7", 200, "next", 7},
+		{"?id=7", 200, "exact", 7},
+		{"?id=7&next=false", 200, "exact", 7},
+		{"?after_id=7", 200, "next", 7},
+		{"?after_id=0", 200, "next", 0},
+		{"?next=true", 400, "", 0},
+		{"?next=false", 400, "", 0},
+		{"?id=0&next=true", 400, "", 0},
+		{"?id=-1", 400, "", 0},
+		{"?id=", 400, "", 0},
+		{"?id=abc", 400, "", 0},
+		{"?id=999999999999999999999999", 400, "", 0},
+		{"?id=7&next=1", 400, "", 0},
+		{"?id=7&next=", 400, "", 0},
+		{"?id=7&next=TRUE", 400, "", 0},
+		{"?id=7&id=8", 400, "", 0},
+		{"?id=7&next=true&next=false", 400, "", 0},
+		{"?id=7&after_id=7", 400, "", 0},
+		{"?next=true&after_id=7", 400, "", 0},
+		{"?after_id=-1", 400, "", 0},
+		{"?after_id=", 400, "", 0},
+		{"?after_id=1&after_id=2", 400, "", 0},
+		{"?unknown=1", 400, "", 0},
+	} {
+		t.Run(tc.query, func(t *testing.T) {
+			r := &feedRepository{}
+			w := call(t, "GET", "/api/tariffs/feed"+tc.query, "", NewHandler(r).FeedAPI)
+			if w.Code != tc.code || r.operation != tc.operation || r.selectedID != tc.id {
+				t.Fatalf("code=%d operation=%s id=%d response=%s", w.Code, r.operation, r.selectedID, w.Body.String())
+			}
+		})
+	}
+}
+func TestFeedMissingCardAndEmptyFeed(t *testing.T) {
+	for _, tc := range []struct {
+		query string
+		code  int
+	}{
+		{"", 200}, {"?id=7&next=true", 200}, {"?after_id=7", 200},
+		{"?id=7", 404}, {"?id=7&next=false", 404},
+	} {
+		r := &feedRepository{err: repository.ErrTariffNotFound}
+		w := call(t, "GET", "/api/tariffs/feed"+tc.query, "", NewHandler(r).FeedAPI)
+		if w.Code != tc.code {
+			t.Fatalf("%s: %d %s", tc.query, w.Code, w.Body.String())
+		}
+		if tc.code == 200 && !bytes.Contains(w.Body.Bytes(), []byte(`"data":null`)) {
+			t.Fatal("empty feed must return null")
+		}
+	}
+}

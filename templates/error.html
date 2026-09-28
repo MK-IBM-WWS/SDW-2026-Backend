@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ошибка</title>
+    <link rel="stylesheet" href="/static/styles/style.css?v=4">
+</head>
+<body>
+    <div class="phone phone--pattern">
+        <main class="draft form-error">
+            <h1>Не удалось выполнить действие</h1>
+            <p role="alert">{{ .message }}</p>
+            <a class="form-error__back" href="{{ .back }}">Вернуться</a>
+        </main>
+    </div>
+</body>
+</html>

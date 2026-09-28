@@ -131,23 +131,64 @@ func (h *Handler) ListAPI(c *gin.Context) {
 	success(c, 200, result)
 }
 func (h *Handler) FeedAPI(c *gin.Context) {
-	after := uint64(0)
-	for k, v := range c.Request.URL.Query() {
-		if k != "after_id" || len(v) != 1 {
-			Fail(c, 400, "Допустим только один after_id")
+	query := c.Request.URL.Query()
+	for key, values := range query {
+		if (key != "id" && key != "next" && key != "after_id") || len(values) != 1 {
+			Fail(c, 400, "Допустимы однократные параметры id, next или after_id")
 			return
 		}
 	}
-	if values, ok := c.Request.URL.Query()["after_id"]; ok {
-		var err error
-		after, err = strconv.ParseUint(values[0], 10, 63)
+	_, hasID := query["id"]
+	_, hasNext := query["next"]
+	_, hasAfter := query["after_id"]
+	if hasAfter && (hasID || hasNext) {
+		Fail(c, 400, "after_id нельзя совмещать с id или next")
+		return
+	}
+	if hasNext && !hasID {
+		Fail(c, 400, "Для next необходимо указать id")
+		return
+	}
+
+	var id uint64
+	var err error
+	next := false
+	if hasID {
+		id, err = strconv.ParseUint(query.Get("id"), 10, 63)
+		if err != nil || id == 0 {
+			Fail(c, 400, "id должен быть положительным целым числом")
+			return
+		}
+		if hasNext {
+			switch query.Get("next") {
+			case "true":
+				next = true
+			case "false":
+				next = false
+			default:
+				Fail(c, 400, "next должен быть true или false")
+				return
+			}
+		}
+	}
+	if hasAfter {
+		id, err = strconv.ParseUint(query.Get("after_id"), 10, 63)
 		if err != nil {
 			Fail(c, 400, "Некорректный after_id")
 			return
 		}
 	}
-	t, err := h.Repository.GetNextPublishedTariff(uint(after))
-	if errors.Is(err, repository.ErrTariffNotFound) {
+
+	var tariff *ds.CloudTariff
+	exactCard := hasID && !next
+	if exactCard {
+		tariff, err = h.Repository.GetPublishedTariff(uint(id))
+	} else {
+		// Without parameters: the first card. With next/after_id: the next card,
+		// wrapping to the first published card after the end of the feed.
+		tariff, err = h.Repository.GetNextPublishedTariff(uint(id))
+	}
+	if errors.Is(err, repository.ErrTariffNotFound) && !exactCard {
 		success(c, 200, nil)
 		return
 	}
@@ -155,7 +196,7 @@ func (h *Handler) FeedAPI(c *gin.Context) {
 		apiError(c, err)
 		return
 	}
-	success(c, 200, serialize(*t))
+	success(c, 200, serialize(*tariff))
 }
 func (h *Handler) DetailAPI(c *gin.Context) {
 	if !noQuery(c) {
