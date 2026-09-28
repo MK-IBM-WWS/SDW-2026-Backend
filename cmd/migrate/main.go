@@ -1,6 +1,9 @@
 package main
 
 import (
+	"cloud-tariffs-backend/internal/app/currentuser"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm/clause"
 	"log"
 
 	"gorm.io/driver/postgres"
@@ -25,15 +28,6 @@ func main() {
 
 	if err := db.AutoMigrate(&ds.User{}, &ds.CloudTariff{}, &ds.UserTariffLike{}); err != nil {
 		log.Fatalf("не удалось выполнить миграцию: %v", err)
-	}
-	// AutoMigrate сохраняет старые столбцы, поэтому удаляем их и в существующей БД.
-	for _, statement := range []string{
-		"ALTER TABLE users DROP COLUMN IF EXISTS created_at",
-		"ALTER TABLE user_tariff_likes DROP COLUMN IF EXISTS created_at",
-	} {
-		if err := db.Exec(statement).Error; err != nil {
-			log.Fatalf("не удалось удалить ненужные столбцы: %v", err)
-		}
 	}
 
 	if err := db.Exec(`
@@ -76,6 +70,24 @@ func main() {
 		WHERE tariff_status = 'черновик'
 	`).Error; err != nil {
 		log.Fatalf("не удалось создать индекс одного черновика: %v", err)
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte("student123"), bcrypt.DefaultCost)
+	if err != nil {
+		log.Fatal(err)
+	}
+	user := ds.User{UserID: currentuser.CreatorID, Login: "student", PasswordHash: string(hash)}
+	if err := db.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}}, DoNothing: true}).Create(&user).Error; err != nil {
+		log.Fatal(err)
+	}
+	// Convert the old lab's full MinIO URLs into object names without touching files.
+	if err := db.Exec(`UPDATE cloud_tariffs SET
+        image_url = CASE WHEN image_url ~ '^https?://' THEN regexp_replace(image_url, '^.*/', '') ELSE image_url END,
+        video_url = CASE WHEN video_url ~ '^https?://' THEN regexp_replace(video_url, '^.*/', '') ELSE video_url END`).Error; err != nil {
+		log.Fatal(err)
+	}
+	if err := db.Exec(`SELECT setval(pg_get_serial_sequence('users','user_id'), GREATEST((SELECT COALESCE(MAX(user_id),1) FROM users), (SELECT last_value FROM users_user_id_seq)), true)`).Error; err != nil {
+		log.Fatal(err)
 	}
 
 	log.Println("Миграция выполнена: users, cloud_tariffs, user_tariff_likes")

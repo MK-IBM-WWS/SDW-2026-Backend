@@ -702,3 +702,6 @@ label[for] {
         height: 98px;
     }
 }
+
+button.feed__like-button { border: 0; padding: 0; background: transparent; cursor: pointer; color: inherit; }
+button.feed__like-button[aria-pressed="true"] { color: #6fe0ed; }

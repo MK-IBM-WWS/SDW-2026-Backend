@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"cloud-tariffs-backend/internal/app/currentuser"
+	"context"
 	"errors"
+	"github.com/minio/minio-go/v7"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -19,13 +21,29 @@ var allowedPriceLimits = map[string]int{
 	"500000": 500000,
 }
 
-type Handler struct {
-	Repository *repository.Repository
+// Repository makes HTTP handlers independently testable.
+type Repository interface {
+	GetPublishedTariffs(*int) ([]ds.CloudTariff, error)
+	GetPublishedTariff(uint) (*ds.CloudTariff, error)
+	GetFirstPublishedTariff() (*ds.CloudTariff, error)
+	GetNextPublishedTariff(uint) (*ds.CloudTariff, error)
+	GetDraftTariff(uint) (*ds.CloudTariff, error)
+	CreateWithFiles(context.Context, *ds.CloudTariff, *repository.Upload, *repository.Upload) error
+	PublishDraftTariff(repository.PublishTariffInput) error
+	DeleteTariff(context.Context, uint) error
+	SetLike(context.Context, uint, int) (int64, error)
+	Register(*ds.User) error
+	GetUser(uint) (ds.User, error)
+	UserTariffs(uint) (*ds.User, []ds.CloudTariff, error)
+	VisibleTariff(uint, uint) (*ds.CloudTariff, error)
+	OpenMedia(context.Context, string) (*minio.Object, minio.ObjectInfo, error)
 }
 
-const currentUserID uint = 1
+type Handler struct {
+	Repository Repository
+}
 
-func NewHandler(r *repository.Repository) *Handler {
+func NewHandler(r Repository) *Handler {
 	return &Handler{Repository: r}
 }
 
@@ -104,7 +122,7 @@ func (h *Handler) renderFeed(ctx *gin.Context, tariff *ds.CloudTariff, err error
 }
 
 func (h *Handler) GetTariffDraft(ctx *gin.Context) {
-	tariff, err := h.Repository.GetDraftTariff(currentUserID)
+	tariff, err := h.Repository.GetDraftTariff(currentuser.Get().ID())
 	if err != nil {
 		logrus.Error(err)
 		ctx.String(http.StatusInternalServerError, "Не удалось получить черновик")
@@ -125,122 +143,4 @@ func (h *Handler) GetTariffDraft(ctx *gin.Context) {
 		"hasDraft":  tariff != nil,
 		"activeTab": "draft",
 	})
-}
-
-func (h *Handler) CreateTariffDraft(ctx *gin.Context) {
-	tariffName := strings.TrimSpace(ctx.PostForm("tariff_name"))
-	imageURL := strings.TrimSpace(ctx.PostForm("image_url"))
-	videoURL := strings.TrimSpace(ctx.PostForm("video_url"))
-	if tariffName == "" || !validMediaName(imageURL) || !validMediaName(videoURL) {
-		ctx.String(http.StatusBadRequest, "Название, имя фото и имя видео обязательны")
-		return
-	}
-
-	err := h.Repository.CreateDraftTariff(&ds.CloudTariff{
-		TariffName:   tariffName,
-		ImageURL:     imageURL,
-		VideoURL:     videoURL,
-		TariffStatus: ds.StatusDraft,
-		CreatorID:    currentUserID,
-	})
-	if err != nil && !errors.Is(err, repository.ErrDraftExists) {
-		logrus.Error(err)
-		ctx.String(http.StatusInternalServerError, "Не удалось создать черновик")
-		return
-	}
-
-	ctx.Redirect(http.StatusSeeOther, "/tariffs/draft")
-}
-
-func (h *Handler) PublishTariffDraft(ctx *gin.Context) {
-	tariffID, err := requiredPositiveUint(ctx.PostForm("tariff_id"))
-	if err != nil {
-		ctx.String(http.StatusBadRequest, "Некорректный ID тарифа")
-		return
-	}
-	price, err := requiredNonNegativeInt(ctx.PostForm("price_per_month"))
-	if err != nil {
-		ctx.String(http.StatusBadRequest, "Цена должна быть целым неотрицательным числом")
-		return
-	}
-	ram, err := requiredPositiveInt(ctx.PostForm("ram_gb"))
-	if err != nil {
-		ctx.String(http.StatusBadRequest, "RAM должна быть положительным целым числом")
-		return
-	}
-
-	input := repository.PublishTariffInput{
-		TariffID:         tariffID,
-		CreatorID:        currentUserID,
-		TariffName:       strings.TrimSpace(ctx.PostForm("tariff_name")),
-		ImageURL:         strings.TrimSpace(ctx.PostForm("image_url")),
-		VideoURL:         strings.TrimSpace(ctx.PostForm("video_url")),
-		ShortDescription: strings.TrimSpace(ctx.PostForm("short_description")),
-		PricePerMonth:    price,
-		RAMGB:            ram,
-	}
-	if input.TariffName == "" || minIOURL(input.ImageURL) == "" || minIOURL(input.VideoURL) == "" || input.ShortDescription == "" {
-		ctx.String(http.StatusBadRequest, "Все поля тарифа обязательны")
-		return
-	}
-
-	if err := h.Repository.PublishDraftTariff(input); err != nil {
-		logrus.Error(err)
-		status := http.StatusInternalServerError
-		if errors.Is(err, repository.ErrTariffNotFound) {
-			status = http.StatusNotFound
-		}
-		ctx.String(status, "Не удалось опубликовать черновик")
-		return
-	}
-
-	ctx.Redirect(http.StatusSeeOther, "/tariffs/feed?id="+strconv.FormatUint(uint64(tariffID), 10))
-}
-
-func (h *Handler) DeleteTariff(ctx *gin.Context) {
-	tariffID, err := requiredPositiveUint(ctx.PostForm("tariff_id"))
-	if err != nil {
-		ctx.String(http.StatusBadRequest, "Некорректный ID тарифа")
-		return
-	}
-
-	if err := h.Repository.DeleteTariff(ctx.Request.Context(), tariffID); err != nil {
-		logrus.Error(err)
-		status := http.StatusInternalServerError
-		if errors.Is(err, repository.ErrTariffNotFound) {
-			status = http.StatusNotFound
-		}
-		ctx.String(status, "Не удалось удалить тариф")
-		return
-	}
-
-	ctx.Redirect(http.StatusSeeOther, "/tariffs")
-}
-
-func requiredPositiveUint(value string) (uint, error) {
-	parsed, err := strconv.ParseUint(value, 10, 64)
-	if err != nil || parsed == 0 {
-		return 0, errors.New("ожидалось положительное число")
-	}
-	return uint(parsed), nil
-}
-
-func validMediaName(value string) bool {
-	return value != "" && len(value) <= 500 && !strings.ContainsAny(value, `/\\`) && value != "." && value != ".."
-}
-
-func requiredPositiveInt(value string) (int, error) {
-	parsed, err := strconv.Atoi(value)
-	if err != nil || parsed <= 0 {
-		return 0, errors.New("ожидалось положительное число")
-	}
-	return parsed, nil
-}
-
-func requiredNonNegativeInt(value string) (int, error) {
-	parsed, err := strconv.Atoi(value)
-	if err != nil || parsed < 0 {
-		return 0, errors.New("ожидалось неотрицательное число")
-	}
-	return parsed, nil
 }

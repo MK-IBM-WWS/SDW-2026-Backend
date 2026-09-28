@@ -1,76 +1,30 @@
 package handler
 
 import (
-	"net/http"
-	"net/url"
-	"os"
-	"strings"
-	"time"
-
 	"cloud-tariffs-backend/internal/app/ds"
+	"fmt"
 )
 
 const (
-	defaultMinIOBaseURL = "http://localhost:9000/cloud-tariffs/"
-	fallbackImageURL   = "/static/media/example.jpg"
-	fallbackVideoURL   = "/static/media/example.mp4"
+	fallbackImageURL = "/static/media/example.jpg"
+	fallbackVideoURL = "/static/media/example.mp4"
 )
 
-var mediaHTTPClient = &http.Client{Timeout: 2 * time.Second}
+func mediaURLs(t ds.CloudTariff) (string, string) {
+	imageURL, videoURL := fallbackImageURL, fallbackVideoURL
+	if t.ImageURL != "" {
+		imageURL = fmt.Sprintf("/api/tariffs/%d/image", t.TariffID)
+	}
+	if t.VideoURL != "" {
+		videoURL = fmt.Sprintf("/api/tariffs/%d/video", t.TariffID)
+	}
+	return imageURL, videoURL
+}
 
-func (h *Handler) applyMediaFallbacks(tariff *ds.CloudTariff) {
-	if tariff == nil {
+// Missing objects redirect to static examples; browser decoding failures use media-fallback.js.
+func (h *Handler) applyMediaFallbacks(t *ds.CloudTariff) {
+	if t == nil {
 		return
 	}
-
-	imageURL := minIOURL(tariff.ImageURL)
-	videoURL := minIOURL(tariff.VideoURL)
-	if mediaExists(imageURL) {
-		tariff.ImageURL = imageURL
-	} else {
-		tariff.ImageURL = fallbackImageURL
-	}
-	if mediaExists(videoURL) {
-		tariff.VideoURL = videoURL
-	} else {
-		tariff.VideoURL = fallbackVideoURL
-	}
-}
-
-// Supports old full MinIO URLs and new file names saved in the database.
-func minIOURL(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return ""
-	}
-	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
-		return value
-	}
-	if strings.ContainsAny(value, `/\\`) || value == "." || value == ".." {
-		return ""
-	}
-	base := strings.TrimSpace(os.Getenv("MINIO_MEDIA_BASE_URL"))
-	if base == "" {
-		base = defaultMinIOBaseURL
-	}
-	return strings.TrimRight(base, "/") + "/" + url.PathEscape(value)
-}
-
-func mediaExists(mediaURL string) bool {
-	if mediaURL == "" {
-		return false
-	}
-
-	request, err := http.NewRequest(http.MethodHead, mediaURL, nil)
-	if err != nil {
-		return false
-	}
-
-	response, err := mediaHTTPClient.Do(request)
-	if err != nil {
-		return false
-	}
-	defer response.Body.Close()
-
-	return response.StatusCode >= http.StatusOK && response.StatusCode < http.StatusBadRequest
+	t.ImageURL, t.VideoURL = mediaURLs(*t)
 }

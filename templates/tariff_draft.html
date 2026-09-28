@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ if .hasDraft }}Публикация тарифа{{ else }}Добавление тарифа{{ end }}</title>
     <link rel="stylesheet" href="/static/styles/style.css?v=3">
+    <script src="/static/scripts/media-fallback.js?v=1"></script>
 </head>
 <body>
     <div class="phone phone--pattern">
@@ -15,23 +16,20 @@
 
         <main class="draft">
             {{ if .hasDraft }}
-            <form action="/tariffs/publish" method="POST">
-                <input type="hidden" name="tariff_id" value="{{ .tariff.TariffID }}">
-                <input type="hidden" name="image_url" value="{{ .tariff.ImageURL }}">
-                <input type="hidden" name="video_url" value="{{ .tariff.VideoURL }}">
+            <form class="api-publish" data-id="{{ .tariff.TariffID }}">
 
                 <div class="draft__media-stack">
                     <section class="media-field">
                         <span class="draft__label">Фото</span>
                         <div class="media-field__preview">
-                            <img src="{{ .preview.ImageURL }}" alt="Фото черновика {{ .tariff.TariffName }}">
+                            <img data-media-fallback="/static/media/example.jpg" src="{{ .preview.ImageURL }}" alt="Фото черновика {{ .tariff.TariffName }}">
                         </div>
                     </section>
 
                     <section class="media-field">
                         <span class="draft__label">Видео</span>
                         <div class="media-field__preview">
-                            <video src="{{ .preview.VideoURL }}" poster="{{ .preview.ImageURL }}" muted playsinline controls preload="metadata"></video>
+                            <video data-media-fallback="/static/media/example.mp4" src="{{ .preview.VideoURL }}" poster="{{ .preview.ImageURL }}" muted playsinline controls preload="metadata"></video>
                         </div>
                     </section>
                 </div>
@@ -56,7 +54,7 @@
                 <button class="draft__submit" type="submit">Опубликовать</button>
             </form>
             {{ else }}
-            <form action="/tariffs/draft" method="POST">
+            <form class="api-create" enctype="multipart/form-data">
                 <div class="draft__media-stack">
                     <section class="media-field">
                         <label class="draft__label" for="image_file">Фото</label>
@@ -64,8 +62,7 @@
                             <img id="image_preview" alt="Выбранное фото" hidden>
                             <span id="image_prompt" aria-hidden="true">+</span>
                         </label>
-                        <input class="visually-hidden draft__file" id="image_file" type="file" accept="image/*" required>
-                        <input id="image_name" name="image_url" type="hidden">
+                        <input class="visually-hidden draft__file" id="image_file" name="image" type="file" accept="image/*" required>
                     </section>
                     <section class="media-field">
                         <label class="draft__label" for="video_file">Видео</label>
@@ -73,8 +70,7 @@
                             <video id="video_preview" muted playsinline controls preload="metadata" hidden></video>
                             <span id="video_prompt" aria-hidden="true">+</span>
                         </label>
-                        <input class="visually-hidden draft__file" id="video_file" type="file" accept="video/*" required>
-                        <input id="video_name" name="video_url" type="hidden">
+                        <input class="visually-hidden draft__file" id="video_file" name="video" type="file" accept="video/*" required>
                     </section>
                 </div>
 
@@ -89,5 +85,6 @@
         {{ template "tabbar.html" . }}
     </div>
     {{ if not .hasDraft }}<script src="/static/scripts/draft-preview.js?v=3" defer></script>{{ end }}
+<script src="/static/scripts/api-forms.js" defer></script>
 </body>
 </html>

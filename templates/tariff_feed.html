@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ .tariff.TariffName }}</title>
     <link rel="stylesheet" href="/static/styles/style.css?v=3">
+    <script src="/static/scripts/media-fallback.js?v=1"></script>
 </head>
 <body>
     <div class="phone">
         <main class="feed">
-            <video class="feed__video" autoplay muted loop playsinline preload="auto">
-                <source src="{{ .tariff.VideoURL }}" type="video/mp4">
+            <video data-media-fallback="/static/media/example.mp4" class="feed__video" autoplay muted loop playsinline preload="auto">
+                <source src="{{ .tariff.VideoURL }}">
                 Ваш браузер не поддерживает воспроизведение видео.
             </video>
             <div class="feed__overlay" aria-hidden="true"></div>
@@ -38,12 +39,12 @@
                     <strong class="feed__ram-value">{{ .tariff.RAMGB }} ГБ</strong>
                 </div>
                 <div class="feed__likes" aria-label="Лайков: {{ .tariff.LikeCount }}">
-                    <span class="feed__like-button" aria-hidden="true">
+                    <button class="feed__like-button api-like" type="button" data-id="{{ .tariff.TariffID }}" data-liked="{{ .tariff.IsLiked }}" aria-label="Поставить или убрать лайк" aria-pressed="{{ if .tariff.IsLiked }}true{{ else }}false{{ end }}">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11z"/>
                         </svg>
-                    </span>
-                    <strong>{{ .tariff.LikeCount }}</strong>
+                    </button>
+                    <strong class="like-count">{{ .tariff.LikeCount }}</strong>
                 </div>
 
                 <a class="feed__next" href="/tariffs/feed?id={{ .tariff.TariffID }}&amp;next=true" aria-label="Следующий тариф">
@@ -56,5 +57,6 @@
 
         {{ template "tabbar.html" . }}
     </div>
+<script src="/static/scripts/api-forms.js" defer></script>
 </body>
 </html>

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарифы облачного хостинга</title>
     <link rel="stylesheet" href="/static/styles/style.css?v=3">
+    <script src="/static/scripts/media-fallback.js?v=1"></script>
 </head>
 <body>
     <div class="phone phone--pattern">
@@ -24,7 +25,7 @@
             {{ range .tariffs }}
             <article class="tile">
                 <a class="tile__link" href="/tariffs/feed?id={{ .TariffID }}">
-                <img class="tile__image" src="{{ .ImageURL }}" alt="{{ .TariffName }}">
+                <img data-media-fallback="/static/media/example.jpg" class="tile__image" src="{{ .ImageURL }}" alt="{{ .TariffName }}">
                 <div class="tile__body">
                     <h2 class="tile__name">{{ .TariffName }}</h2>
                     <p class="tile__price">{{ .PricePerMonth }} ₽ / месяц</p>
@@ -35,14 +36,14 @@
                     <span class="tile__open" aria-hidden="true">›</span>
                 </div>
                 </a>
-                <form class="tile__delete-form" action="/tariffs/delete" method="POST">
-                    <input type="hidden" name="tariff_id" value="{{ .TariffID }}">
+                {{ if .IsOwner }}<form class="tile__delete-form api-delete" data-id="{{ .TariffID }}">
+
                     <button class="tile__delete" type="submit" aria-label="Удалить тариф {{ .TariffName }}" title="Логически удалить тариф">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M4 7h16M9 7V4h6v3m-8 0 1 14h8l1-14M10 11v6m4-6v6"/>
                         </svg>
                     </button>
-                </form>
+                </form>{{ end }}
             </article>
             {{ else }}
             <p class="empty-state">По выбранной цене тарифы не найдены.</p>
@@ -52,5 +53,6 @@
         {{ template "tabbar.html" . }}
     </div>
     <script src="/static/scripts/price-filter.js?v=3" defer></script>
+<script src="/static/scripts/api-forms.js" defer></script>
 </body>
 </html>

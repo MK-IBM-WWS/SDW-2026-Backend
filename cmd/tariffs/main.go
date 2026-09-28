@@ -13,4 +13,3 @@ func main() {
 		log.Fatalf("application stopped with an error: %v", err)
 	}
 }
-

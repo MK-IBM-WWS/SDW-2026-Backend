@@ -3,164 +3,176 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
-	"gorm.io/gorm"
-
+	"cloud-tariffs-backend/internal/app/currentuser"
 	"cloud-tariffs-backend/internal/app/ds"
+	"github.com/jackc/pgx/v5/pgconn"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var (
 	ErrTariffNotFound = errors.New("тариф не найден")
-	ErrDraftExists    = errors.New("у пользователя уже есть черновик тарифа")
+	ErrDraftExists    = errors.New("у пользователя уже есть черновик")
+	ErrForbidden      = errors.New("можно изменять только свои тарифы")
+	ErrInvalidState   = errors.New("операция недоступна в текущем статусе")
+	ErrLoginExists    = errors.New("логин уже занят")
 )
 
+func (r *Repository) tariffQuery() *gorm.DB {
+	return r.db.Model(&ds.CloudTariff{}).Preload("Creator").Select(`cloud_tariffs.*,
+        (SELECT COUNT(*) FROM user_tariff_likes l WHERE l.tariff_id=cloud_tariffs.tariff_id) AS like_count,
+        CASE WHEN EXISTS (SELECT 1 FROM user_tariff_likes l WHERE l.tariff_id=cloud_tariffs.tariff_id AND l.user_id=?) THEN 1 ELSE 0 END AS is_liked`, currentuser.Get().ID())
+}
 func (r *Repository) GetPublishedTariffs(maxPrice *int) ([]ds.CloudTariff, error) {
-	var tariffs []ds.CloudTariff
-
-	query := r.db.Model(&ds.CloudTariff{}).
-		Select(`cloud_tariffs.*,
-			(SELECT COUNT(*) FROM user_tariff_likes
-			 WHERE user_tariff_likes.tariff_id = cloud_tariffs.tariff_id) AS like_count`).
-		Where("cloud_tariffs.tariff_status = ?", ds.StatusPublished)
-
+	tariffs := make([]ds.CloudTariff, 0)
+	q := r.tariffQuery().Where("tariff_status = ?", ds.StatusPublished)
 	if maxPrice != nil {
-		query = query.Where("cloud_tariffs.price_per_month <= ?", *maxPrice)
+		q = q.Where("price_per_month <= ?", *maxPrice)
 	}
-
-	if err := query.Order("cloud_tariffs.tariff_id").Find(&tariffs).Error; err != nil {
-		return nil, fmt.Errorf("получение опубликованных тарифов: %w", err)
+	err := q.Order("tariff_id").Find(&tariffs).Error
+	for i := range tariffs {
+		if tariffs[i].CreatorID == currentuser.Get().ID() {
+			tariffs[i].IsOwner = 1
+		}
 	}
-	return tariffs, nil
+	return tariffs, err
 }
-
-func (r *Repository) GetPublishedTariff(tariffID uint) (*ds.CloudTariff, error) {
-	var tariff ds.CloudTariff
-	err := r.db.Model(&ds.CloudTariff{}).
-		Select(`cloud_tariffs.*,
-			(SELECT COUNT(*) FROM user_tariff_likes
-			 WHERE user_tariff_likes.tariff_id = cloud_tariffs.tariff_id) AS like_count`).
-		Where("cloud_tariffs.tariff_id = ? AND cloud_tariffs.tariff_status = ?", tariffID, ds.StatusPublished).
-		First(&tariff).Error
+func (r *Repository) GetPublishedTariff(id uint) (*ds.CloudTariff, error) {
+	var t ds.CloudTariff
+	err := r.tariffQuery().Where("tariff_id = ? AND tariff_status = ?", id, ds.StatusPublished).First(&t).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, ErrTariffNotFound
+		err = ErrTariffNotFound
 	}
-	if err != nil {
-		return nil, fmt.Errorf("получение тарифа: %w", err)
-	}
-	return &tariff, nil
+	return &t, err
 }
-
 func (r *Repository) GetFirstPublishedTariff() (*ds.CloudTariff, error) {
-	tariffs, err := r.GetPublishedTariffs(nil)
-	if err != nil {
-		return nil, err
-	}
-	if len(tariffs) == 0 {
-		return nil, ErrTariffNotFound
-	}
-	return &tariffs[0], nil
+	return r.GetNextPublishedTariff(0)
 }
-
-func (r *Repository) GetNextPublishedTariff(afterTariffID uint) (*ds.CloudTariff, error) {
-	var tariff ds.CloudTariff
-	err := r.db.Model(&ds.CloudTariff{}).
-		Select(`cloud_tariffs.*,
-			(SELECT COUNT(*) FROM user_tariff_likes
-			 WHERE user_tariff_likes.tariff_id = cloud_tariffs.tariff_id) AS like_count`).
-		Where("cloud_tariffs.tariff_status = ? AND cloud_tariffs.tariff_id > ?", ds.StatusPublished, afterTariffID).
-		Order("cloud_tariffs.tariff_id").
-		First(&tariff).Error
-
+func (r *Repository) GetNextPublishedTariff(after uint) (*ds.CloudTariff, error) {
+	var t ds.CloudTariff
+	err := r.tariffQuery().Where("tariff_status = ? AND tariff_id > ?", ds.StatusPublished, after).Order("tariff_id").First(&t).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) && after > 0 {
+		return r.GetNextPublishedTariff(0)
+	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return r.GetFirstPublishedTariff()
+		err = ErrTariffNotFound
 	}
-	if err != nil {
-		return nil, fmt.Errorf("получение следующего тарифа: %w", err)
-	}
-	return &tariff, nil
+	return &t, err
 }
-
-func (r *Repository) GetDraftTariff(creatorID uint) (*ds.CloudTariff, error) {
-	var tariff ds.CloudTariff
-	err := r.db.Where("creator_id = ? AND tariff_status = ?", creatorID, ds.StatusDraft).
-		First(&tariff).Error
+func (r *Repository) GetDraftTariff(creator uint) (*ds.CloudTariff, error) {
+	var t ds.CloudTariff
+	err := r.tariffQuery().Where("creator_id = ? AND tariff_status = ?", creator, ds.StatusDraft).First(&t).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
-	if err != nil {
-		return nil, fmt.Errorf("получение черновика: %w", err)
-	}
-	return &tariff, nil
+	return &t, err
 }
-
-func (r *Repository) CreateDraftTariff(tariff *ds.CloudTariff) error {
-	var count int64
-	if err := r.db.Model(&ds.CloudTariff{}).
-		Where("creator_id = ? AND tariff_status = ?", tariff.CreatorID, ds.StatusDraft).
-		Count(&count).Error; err != nil {
-		return fmt.Errorf("проверка существования черновика: %w", err)
-	}
-	if count > 0 {
+func (r *Repository) CreateDraftTariff(t *ds.CloudTariff) error {
+	// The partial unique index also protects against simultaneous HTTP requests.
+	err := r.db.Omit("Creator").Create(t).Error
+	var pg *pgconn.PgError
+	if errors.As(err, &pg) && pg.Code == "23505" && pg.ConstraintName == "idx_cloud_tariffs_one_draft_per_creator" {
 		return ErrDraftExists
 	}
-
-	if err := r.db.Create(tariff).Error; err != nil {
-		return fmt.Errorf("создание черновика: %w", err)
-	}
-	return nil
+	return err
 }
 
 type PublishTariffInput struct {
 	TariffID         uint
 	CreatorID        uint
 	TariffName       string
-	ImageURL         string
-	VideoURL         string
 	ShortDescription string
 	PricePerMonth    int
 	RAMGB            int
 }
 
-func (r *Repository) PublishDraftTariff(input PublishTariffInput) error {
-	formedAt := time.Now()
-	result := r.db.Model(&ds.CloudTariff{}).
-		Where("tariff_id = ? AND creator_id = ? AND tariff_status = ?", input.TariffID, input.CreatorID, ds.StatusDraft).
-		Updates(map[string]any{
-			"tariff_name":       input.TariffName,
-			"image_url":         input.ImageURL,
-			"video_url":         input.VideoURL,
-			"short_description": input.ShortDescription,
-			"price_per_month":   input.PricePerMonth,
-			"ram_gb":            input.RAMGB,
-			"tariff_status":     ds.StatusPublished,
-			"formed_at":         formedAt,
-		})
-	if result.Error != nil {
-		return fmt.Errorf("публикация тарифа: %w", result.Error)
+func ownedActive(tx *gorm.DB, id, creator uint) (*ds.CloudTariff, error) {
+	var t ds.CloudTariff
+	err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("tariff_id = ? AND tariff_status <> ?", id, ds.StatusDeleted).First(&t).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrTariffNotFound
 	}
-	if result.RowsAffected == 0 {
-		return ErrTariffNotFound
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	if t.CreatorID != creator {
+		return nil, ErrForbidden
+	}
+	return &t, nil
+}
+func (r *Repository) PublishDraftTariff(in PublishTariffInput) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		t, err := ownedActive(tx, in.TariffID, in.CreatorID)
+		if err != nil {
+			return err
+		}
+		if t.TariffStatus != ds.StatusDraft {
+			return ErrInvalidState
+		}
+		return tx.Model(t).Updates(map[string]any{
+			"tariff_name": in.TariffName, "short_description": in.ShortDescription,
+			"price_per_month": in.PricePerMonth, "ram_gb": in.RAMGB,
+			"tariff_status": ds.StatusPublished, "formed_at": time.Now().UTC(),
+		}).Error
+	})
+}
+func (r *Repository) DeleteTariff(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		t, err := ownedActive(tx, id, currentuser.Get().ID())
+		if err != nil {
+			return err
+		}
+		// Soft delete: preserve the row and its files and likes.
+		return tx.Model(t).Update("tariff_status", ds.StatusDeleted).Error
+	})
+}
+func (r *Repository) SetLike(ctx context.Context, id uint, value int) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var t ds.CloudTariff
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("tariff_id = ? AND tariff_status = ?", id, ds.StatusPublished).First(&t).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrTariffNotFound
+		}
+		if err != nil {
+			return err
+		}
+		like := ds.UserTariffLike{UserID: currentuser.Get().ID(), TariffID: id}
+		if value == 1 {
+			err = tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}, {Name: "tariff_id"}}, DoNothing: true}).Create(&like).Error
+		} else {
+			err = tx.Where("user_id = ? AND tariff_id = ?", like.UserID, id).Delete(&ds.UserTariffLike{}).Error
+		}
+		if err != nil {
+			return err
+		}
+		return tx.Model(&ds.UserTariffLike{}).Where("tariff_id = ?", id).Count(&count).Error
+	})
+	return count, err
+}
+func (r *Repository) Register(u *ds.User) error {
+	err := r.db.Create(u).Error
+	var pg *pgconn.PgError
+	if errors.As(err, &pg) && pg.Code == "23505" {
+		return ErrLoginExists
+	}
+	return err
+}
+func (r *Repository) UserTariffs(id uint) (*ds.User, []ds.CloudTariff, error) {
+	var u ds.User
+	err := r.db.First(&u, id).Error
+	if err != nil {
+		return nil, nil, err
+	}
+	list := make([]ds.CloudTariff, 0)
+	err = r.tariffQuery().Where("creator_id = ? AND tariff_status = ?", id, ds.StatusPublished).Order("tariff_id").Find(&list).Error
+	return &u, list, err
 }
 
-func (r *Repository) DeleteTariff(ctx context.Context, tariffID uint) error {
-	result, err := r.sqlDB.ExecContext(ctx, `
-		UPDATE cloud_tariffs
-		SET tariff_status = $1
-		WHERE tariff_id = $2 AND tariff_status = $3`, ds.StatusDeleted, tariffID, ds.StatusPublished)
-	if err != nil {
-		return fmt.Errorf("логическое удаление тарифа %d: %w", tariffID, err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("получение результата удаления: %w", err)
-	}
-	if rowsAffected == 0 {
-		return ErrTariffNotFound
-	}
-	return nil
+func (r *Repository) GetUser(id uint) (ds.User, error) {
+	var u ds.User
+	err := r.db.First(&u, id).Error
+	return u, err
 }
