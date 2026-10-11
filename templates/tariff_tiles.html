@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарифы облачного хостинга</title>
-    <link rel="stylesheet" href="/static/styles/style.css?v=3">
+    <link rel="stylesheet" href="/static/styles/style.css?v=5">
     <script src="/static/scripts/media-fallback.js?v=1"></script>
 </head>
 <body>
@@ -16,7 +16,15 @@
         <form class="filter" action="/tariffs" method="GET">
             <div class="filter__range-wrap">
                 <label class="filter__label" for="priceStep">Максимальная цена: <strong id="priceCaption"></strong></label>
-                <input class="filter__range" id="priceStep" type="range" min="0" max="3" step="1" value="{{ if eq .priceLimit "1000" }}1{{ else if eq .priceLimit "10000" }}2{{ else if eq .priceLimit "500000" }}3{{ else }}0{{ end }}">
+                <div class="filter__controls">
+                    <input class="filter__range" id="priceStep" type="range" min="0" max="3" step="1" value="{{ if eq .priceLimit "1000" }}1{{ else if eq .priceLimit "10000" }}2{{ else if eq .priceLimit "500000" }}3{{ else }}0{{ end }}">
+                    <button class="filter__submit" type="submit" aria-label="Применить фильтр по цене" title="Применить фильтр по цене">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <circle cx="10.5" cy="10.5" r="6.5"/>
+                            <path d="m15.5 15.5 5 5"/>
+                        </svg>
+                    </button>
+                </div>
                 <input id="priceLimit" name="priceLimit" type="hidden" value="{{ .priceLimit }}">
             </div>
         </form>
@@ -52,7 +60,7 @@
 
         {{ template "tabbar.html" . }}
     </div>
-    <script src="/static/scripts/price-filter.js?v=3" defer></script>
+    <script src="/static/scripts/price-filter.js?v=4" defer></script>
 <script src="/static/scripts/api-forms.js" defer></script>
 </body>
 </html>

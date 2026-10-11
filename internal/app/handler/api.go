@@ -14,6 +14,7 @@ import (
 	"cloud-tariffs-backend/internal/app/currentuser"
 	"cloud-tariffs-backend/internal/app/ds"
 	"cloud-tariffs-backend/internal/app/repository"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -85,11 +86,16 @@ func noBody(c *gin.Context) bool {
 	return true
 }
 
+type CreatorResponse struct {
+	UserID uint   `json:"user_id"`
+	Login  string `json:"login"`
+}
+
 type TariffResponse struct {
 	ds.CloudTariff
-	ImageURL string  `json:"image_url"`
-	VideoURL string  `json:"video_url"`
-	Creator  ds.User `json:"creator"`
+	ImageURL string          `json:"image_url"`
+	VideoURL string          `json:"video_url"`
+	Creator  CreatorResponse `json:"creator"`
 }
 
 func serialize(t ds.CloudTariff) TariffResponse {
@@ -97,7 +103,7 @@ func serialize(t ds.CloudTariff) TariffResponse {
 		t.IsOwner = 1
 	}
 	imageURL, videoURL := mediaURLs(t)
-	return TariffResponse{CloudTariff: t, ImageURL: imageURL, VideoURL: videoURL, Creator: t.Creator}
+	return TariffResponse{CloudTariff: t, ImageURL: imageURL, VideoURL: videoURL, Creator: CreatorResponse{UserID: t.Creator.UserID, Login: t.Creator.Login}}
 }
 func (h *Handler) ListAPI(c *gin.Context) {
 	var max *int
@@ -184,8 +190,6 @@ func (h *Handler) FeedAPI(c *gin.Context) {
 	if exactCard {
 		tariff, err = h.Repository.GetPublishedTariff(uint(id))
 	} else {
-		// Without parameters: the first card. With next/after_id: the next card,
-		// wrapping to the first published card after the end of the feed.
 		tariff, err = h.Repository.GetNextPublishedTariff(uint(id))
 	}
 	if errors.Is(err, repository.ErrTariffNotFound) && !exactCard {

@@ -178,7 +178,7 @@ label[for] {
 /* Страница плитки */
 .filter {
     width: 100%;
-    padding: 4px 0 18px;
+    padding: 4px 22px 18px;
 }
 
 .draft__input {
@@ -202,12 +202,56 @@ label[for] {
     text-align: center;
 }
 
-.filter__range {
+.filter__controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 36px;
+    align-items: center;
     width: 100%;
+    gap: 12px;
+}
+
+.filter__range {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    min-width: 0;
     height: 20px;
     margin: 0;
     accent-color: var(--color-accent);
     cursor: pointer;
+}
+
+.filter__submit {
+    grid-column: 2;
+    grid-row: 1;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    color: #000000;
+    background: var(--color-accent);
+    border: 0;
+    border-radius: var(--control-radius);
+    cursor: pointer;
+}
+
+.filter__submit svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.filter__submit:hover {
+    background: var(--color-accent-hover);
+}
+
+.filter__submit:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
 }
 
 .filter__range:focus-visible,

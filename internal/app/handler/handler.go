@@ -4,9 +4,10 @@ import (
 	"cloud-tariffs-backend/internal/app/currentuser"
 	"context"
 	"errors"
-	"github.com/minio/minio-go/v7"
 	"net/http"
 	"strconv"
+
+	"github.com/minio/minio-go/v7"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -21,7 +22,6 @@ var allowedPriceLimits = map[string]int{
 	"500000": 500000,
 }
 
-// Repository makes HTTP handlers independently testable.
 type Repository interface {
 	GetPublishedTariffs(*int) ([]ds.CloudTariff, error)
 	GetPublishedTariff(uint) (*ds.CloudTariff, error)

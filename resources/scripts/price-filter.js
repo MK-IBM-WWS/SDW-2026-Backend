@@ -8,8 +8,6 @@ const priceSteps = [
 const slider = document.getElementById("priceStep");
 const hiddenPrice = document.getElementById("priceLimit");
 const caption = document.getElementById("priceCaption");
-const form = slider.form;
-let submitTimer;
 
 function updatePriceFilter() {
     const selected = priceSteps[Number(slider.value)];
@@ -17,9 +15,5 @@ function updatePriceFilter() {
     caption.textContent = selected.label;
 }
 
-slider.addEventListener("input", () => {
-    updatePriceFilter();
-    clearTimeout(submitTimer);
-    submitTimer = setTimeout(() => form.requestSubmit(), 250);
-});
+slider.addEventListener("input", updatePriceFilter);
 updatePriceFilter();
