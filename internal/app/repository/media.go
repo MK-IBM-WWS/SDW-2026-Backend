@@ -116,17 +116,17 @@ func (r *Repository) CreateWithFiles(ctx context.Context, t *ds.CloudTariff, img
 	return nil
 }
 
-// Fetch media only through the configured MinIO client; never fetch arbitrary stored URLs.
-func (r *Repository) OpenMedia(ctx context.Context, name string) (*minio.Object, minio.ObjectInfo, error) {
-	info, err := r.minio.StatObject(ctx, r.bucket, name, minio.StatObjectOptions{})
-	if err != nil {
-		return nil, info, err
+// MediaURL signs direct downloads from the private bucket for 15 minutes.
+// Missing objects are reported so the response can use the local fallback.
+func (r *Repository) MediaURL(ctx context.Context, name string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	if _, err := r.minio.StatObject(ctx, r.bucket, name, minio.StatObjectOptions{}); err != nil {
+		return "", err
 	}
-	obj, err := r.minio.GetObject(ctx, r.bucket, name, minio.GetObjectOptions{})
-	return obj, info, err
-}
-func (r *Repository) VisibleTariff(id, user uint) (*ds.CloudTariff, error) {
-	var t ds.CloudTariff
-	err := r.db.Where("tariff_id = ? AND (tariff_status = ? OR (tariff_status = ? AND creator_id = ?))", id, ds.StatusPublished, ds.StatusDraft, user).First(&t).Error
-	return &t, err
+	url, err := r.minio.PresignedGetObject(ctx, r.bucket, name, 15*time.Minute, nil)
+	if err != nil {
+		return "", err
+	}
+	return url.String(), nil
 }

@@ -2,8 +2,8 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -59,7 +59,7 @@ func TestInvalidIDsAndLikeBodies(t *testing.T) {
 	}
 }
 func TestSerializationDoesNotExposePassword(t *testing.T) {
-	b, err := json.Marshal(serialize(ds.CloudTariff{TariffID: 7, CreatorID: 1, ImageURL: "image_test.jpg", VideoURL: "video_test.mp4", Creator: ds.User{UserID: 1, Login: "student", PasswordHash: "secret"}}))
+	b, err := json.Marshal(NewHandler(&mediaRepository{}).serialize(context.Background(), ds.CloudTariff{TariffID: 7, CreatorID: 1, ImageURL: "image_test.jpg", VideoURL: "video_test.mp4", Creator: ds.User{UserID: 1, Login: "student", PasswordHash: "secret"}}, 1))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestSerializationDoesNotExposePassword(t *testing.T) {
 	if err = json.Unmarshal(b, &v); err != nil {
 		t.Fatal(err)
 	}
-	if v["is_owner"] != float64(1) || v["image_url"] != "/api/tariffs/7/image" {
+	if v["is_owner"] != float64(1) || v["image_url"] != "http://minio.example/test-bucket/image_test.jpg?X-Amz-Signature=test" {
 		t.Fatalf("bad DTO: %s", b)
 	}
 }
@@ -131,20 +131,6 @@ func TestErrorStatuses(t *testing.T) {
 		}
 	}
 }
-func TestHTMLTemplatesParse(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.LoadHTMLGlob("../../../templates/*.html")
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(200, "tariff_draft.html", gin.H{"hasDraft": true, "tariff": ds.CloudTariff{TariffID: 1}, "preview": ds.CloudTariff{TariffID: 1}})
-	})
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/", nil))
-	b, _ := io.ReadAll(w.Result().Body)
-	if w.Code != 200 || !bytes.Contains(b, []byte("api-publish")) {
-		t.Fatalf("template error: %s", b)
-	}
-}
 
 // Feed requests select either one visible card or the next card in the feed.
 type feedRepository struct {
@@ -154,11 +140,11 @@ type feedRepository struct {
 	err        error
 }
 
-func (r *feedRepository) GetPublishedTariff(id uint) (*ds.CloudTariff, error) {
+func (r *feedRepository) GetPublishedTariff(id, viewer uint) (*ds.CloudTariff, error) {
 	r.selectedID, r.operation = id, "exact"
 	return &ds.CloudTariff{TariffID: id, TariffStatus: ds.StatusPublished}, r.err
 }
-func (r *feedRepository) GetNextPublishedTariff(id uint) (*ds.CloudTariff, error) {
+func (r *feedRepository) GetNextPublishedTariff(id, viewer uint) (*ds.CloudTariff, error) {
 	r.selectedID, r.operation = id, "next"
 	return &ds.CloudTariff{TariffID: id + 1, TariffStatus: ds.StatusPublished}, r.err
 }

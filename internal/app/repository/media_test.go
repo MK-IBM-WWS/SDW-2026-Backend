@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -85,5 +86,38 @@ func TestUploadsCompensatedOnFailure(t *testing.T) {
 				t.Fatal("partial tariff persisted")
 			}
 		})
+	}
+}
+
+func TestMediaURLSignsExistingObjectsOnly(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != "HEAD" {
+			t.Errorf("unexpected method: %s", req.Method)
+		}
+		if strings.Contains(req.URL.Path, "missing") {
+			w.WriteHeader(404)
+			return
+		}
+		w.Header().Set("Content-Length", "4")
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Header().Set("Last-Modified", "Mon, 02 Jan 2006 15:04:05 GMT")
+		w.Header().Set("ETag", `"test"`)
+	}))
+	defer server.Close()
+	client, err := minio.New(strings.TrimPrefix(server.URL, "http://"), &minio.Options{Creds: credentials.NewStaticV4("test", "testpassword", ""), Region: "us-east-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := &Repository{minio: client, bucket: "test-bucket"}
+	signed, err := r.MediaURL(context.Background(), "image_test.jpg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	u, err := url.Parse(signed)
+	if err != nil || u.Path != "/test-bucket/image_test.jpg" || u.Query().Get("X-Amz-Expires") != "900" || u.Query().Get("X-Amz-Signature") == "" {
+		t.Fatalf("invalid signed URL: %s", signed)
+	}
+	if signed, err := r.MediaURL(context.Background(), "missing.jpg"); err == nil || signed != "" {
+		t.Fatal("missing object got download link")
 	}
 }

@@ -1,7 +1,6 @@
 package ds
 
 import (
-	"strings"
 	"time"
 )
 
@@ -34,27 +33,4 @@ type CloudTariff struct {
 
 func (CloudTariff) TableName() string {
 	return "cloud_tariffs"
-}
-
-func (t CloudTariff) DescriptionPreview() string {
-	words := strings.Fields(t.ShortDescription)
-	preview := ""
-	for _, word := range words {
-		candidate := word
-		if preview != "" {
-			candidate = preview + " " + word
-		}
-		if len([]rune(candidate)) > 20 {
-			break
-		}
-		preview = candidate
-	}
-	if preview == "" && len(words) > 0 {
-		word := []rune(words[0])
-		if len(word) > 20 {
-			word = word[:20]
-		}
-		preview = string(word)
-	}
-	return preview
 }

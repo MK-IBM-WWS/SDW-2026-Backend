@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"cloud-tariffs-backend/internal/app/currentuser"
 	"cloud-tariffs-backend/internal/app/ds"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
@@ -20,41 +19,41 @@ var (
 	ErrLoginExists    = errors.New("логин уже занят")
 )
 
-func (r *Repository) tariffQuery() *gorm.DB {
+func (r *Repository) tariffQuery(viewer uint) *gorm.DB {
 	return r.db.Model(&ds.CloudTariff{}).Preload("Creator").Select(`cloud_tariffs.*,
         (SELECT COUNT(*) FROM user_tariff_likes l WHERE l.tariff_id=cloud_tariffs.tariff_id) AS like_count,
-        CASE WHEN EXISTS (SELECT 1 FROM user_tariff_likes l WHERE l.tariff_id=cloud_tariffs.tariff_id AND l.user_id=?) THEN 1 ELSE 0 END AS is_liked`, currentuser.Get().ID())
+        CASE WHEN EXISTS (SELECT 1 FROM user_tariff_likes l WHERE l.tariff_id=cloud_tariffs.tariff_id AND l.user_id=?) THEN 1 ELSE 0 END AS is_liked`, viewer)
 }
-func (r *Repository) GetPublishedTariffs(maxPrice *int) ([]ds.CloudTariff, error) {
+func (r *Repository) GetPublishedTariffs(maxPrice *int, viewer uint) ([]ds.CloudTariff, error) {
 	tariffs := make([]ds.CloudTariff, 0)
-	q := r.tariffQuery().Where("tariff_status = ?", ds.StatusPublished)
+	q := r.tariffQuery(viewer).Where("tariff_status = ?", ds.StatusPublished)
 	if maxPrice != nil {
 		q = q.Where("price_per_month <= ?", *maxPrice)
 	}
 	err := q.Order("tariff_id").Find(&tariffs).Error
 	for i := range tariffs {
-		if tariffs[i].CreatorID == currentuser.Get().ID() {
+		if tariffs[i].CreatorID == viewer {
 			tariffs[i].IsOwner = 1
 		}
 	}
 	return tariffs, err
 }
-func (r *Repository) GetPublishedTariff(id uint) (*ds.CloudTariff, error) {
+func (r *Repository) GetPublishedTariff(id, viewer uint) (*ds.CloudTariff, error) {
 	var t ds.CloudTariff
-	err := r.tariffQuery().Where("tariff_id = ? AND tariff_status = ?", id, ds.StatusPublished).First(&t).Error
+	err := r.tariffQuery(viewer).Where("tariff_id = ? AND tariff_status = ?", id, ds.StatusPublished).First(&t).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = ErrTariffNotFound
 	}
 	return &t, err
 }
-func (r *Repository) GetFirstPublishedTariff() (*ds.CloudTariff, error) {
-	return r.GetNextPublishedTariff(0)
+func (r *Repository) GetFirstPublishedTariff(viewer uint) (*ds.CloudTariff, error) {
+	return r.GetNextPublishedTariff(0, viewer)
 }
-func (r *Repository) GetNextPublishedTariff(after uint) (*ds.CloudTariff, error) {
+func (r *Repository) GetNextPublishedTariff(after, viewer uint) (*ds.CloudTariff, error) {
 	var t ds.CloudTariff
-	err := r.tariffQuery().Where("tariff_status = ? AND tariff_id > ?", ds.StatusPublished, after).Order("tariff_id").First(&t).Error
+	err := r.tariffQuery(viewer).Where("tariff_status = ? AND tariff_id > ?", ds.StatusPublished, after).Order("tariff_id").First(&t).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) && after > 0 {
-		return r.GetNextPublishedTariff(0)
+		return r.GetNextPublishedTariff(0, viewer)
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = ErrTariffNotFound
@@ -63,7 +62,7 @@ func (r *Repository) GetNextPublishedTariff(after uint) (*ds.CloudTariff, error)
 }
 func (r *Repository) GetDraftTariff(creator uint) (*ds.CloudTariff, error) {
 	var t ds.CloudTariff
-	err := r.tariffQuery().Where("creator_id = ? AND tariff_status = ?", creator, ds.StatusDraft).First(&t).Error
+	err := r.tariffQuery(creator).Where("creator_id = ? AND tariff_status = ?", creator, ds.StatusDraft).First(&t).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -118,9 +117,9 @@ func (r *Repository) PublishDraftTariff(in PublishTariffInput) error {
 		}).Error
 	})
 }
-func (r *Repository) DeleteTariff(ctx context.Context, id uint) error {
+func (r *Repository) DeleteTariff(ctx context.Context, id, viewer uint) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		t, err := ownedActive(tx, id, currentuser.Get().ID())
+		t, err := ownedActive(tx, id, viewer)
 		if err != nil {
 			return err
 		}
@@ -128,7 +127,7 @@ func (r *Repository) DeleteTariff(ctx context.Context, id uint) error {
 		return tx.Model(t).Update("tariff_status", ds.StatusDeleted).Error
 	})
 }
-func (r *Repository) SetLike(ctx context.Context, id uint, value int) (int64, error) {
+func (r *Repository) SetLike(ctx context.Context, id, viewer uint, value int) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var t ds.CloudTariff
@@ -139,7 +138,7 @@ func (r *Repository) SetLike(ctx context.Context, id uint, value int) (int64, er
 		if err != nil {
 			return err
 		}
-		like := ds.UserTariffLike{UserID: currentuser.Get().ID(), TariffID: id}
+		like := ds.UserTariffLike{UserID: viewer, TariffID: id}
 		if value == 1 {
 			err = tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}, {Name: "tariff_id"}}, DoNothing: true}).Create(&like).Error
 		} else {
@@ -160,19 +159,14 @@ func (r *Repository) Register(u *ds.User) error {
 	}
 	return err
 }
-func (r *Repository) UserTariffs(id uint) (*ds.User, []ds.CloudTariff, error) {
-	var u ds.User
-	err := r.db.First(&u, id).Error
-	if err != nil {
-		return nil, nil, err
-	}
-	list := make([]ds.CloudTariff, 0)
-	err = r.tariffQuery().Where("creator_id = ? AND tariff_status = ?", id, ds.StatusPublished).Order("tariff_id").Find(&list).Error
-	return &u, list, err
-}
-
 func (r *Repository) GetUser(id uint) (ds.User, error) {
 	var u ds.User
 	err := r.db.First(&u, id).Error
+	return u, err
+}
+
+func (r *Repository) GetUserByLogin(login string) (ds.User, error) {
+	var u ds.User
+	err := r.db.Where("login = ?", login).First(&u).Error
 	return u, err
 }

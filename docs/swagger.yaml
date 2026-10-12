@@ -1,0 +1,687 @@
+basePath: /api
+definitions:
+  auth.Role:
+    enum:
+    - creator
+    - moderator
+    type: string
+    x-enum-varnames:
+    - Creator
+    - Moderator
+  ds.TariffStatus:
+    enum:
+    - черновик
+    - опубликован
+    - удален
+    type: string
+    x-enum-varnames:
+    - StatusDraft
+    - StatusPublished
+    - StatusDeleted
+  ds.User:
+    properties:
+      is_moderator:
+        type: boolean
+      login:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  handler.CreatorResponse:
+    properties:
+      login:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  handler.Credentials:
+    properties:
+      login:
+        example: student
+        type: string
+      password:
+        example: student123
+        type: string
+    type: object
+  handler.DeleteData:
+    properties:
+      deleted:
+        type: boolean
+    type: object
+  handler.DeleteEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/handler.DeleteData'
+      status:
+        example: success
+        type: string
+    type: object
+  handler.ErrorEnvelope:
+    properties:
+      message:
+        type: string
+      status:
+        example: fail
+        type: string
+    type: object
+  handler.LikeData:
+    properties:
+      is_liked:
+        type: integer
+      like_count:
+        type: integer
+      tariff_id:
+        type: integer
+    type: object
+  handler.LikeEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/handler.LikeData'
+      status:
+        example: success
+        type: string
+    type: object
+  handler.ListEnvelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/handler.TariffResponse'
+        type: array
+      status:
+        example: success
+        type: string
+    type: object
+  handler.LogoutData:
+    properties:
+      logged_out:
+        type: boolean
+    type: object
+  handler.LogoutEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/handler.LogoutData'
+      status:
+        example: success
+        type: string
+    type: object
+  handler.TariffEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/handler.TariffResponse'
+      status:
+        example: success
+        type: string
+    type: object
+  handler.TariffResponse:
+    properties:
+      created_at:
+        type: string
+      creator:
+        $ref: '#/definitions/handler.CreatorResponse'
+      creator_id:
+        type: integer
+      formed_at:
+        type: string
+      image_name:
+        type: string
+      image_url:
+        type: string
+      is_liked:
+        type: integer
+      is_owner:
+        type: integer
+      like_count:
+        type: integer
+      price_per_month:
+        type: integer
+      ram_gb:
+        type: integer
+      short_description:
+        type: string
+      tariff_id:
+        type: integer
+      tariff_name:
+        type: string
+      tariff_status:
+        $ref: '#/definitions/ds.TariffStatus'
+      video_name:
+        type: string
+      video_url:
+        type: string
+    type: object
+  handler.TokenEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/handler.TokenResponse'
+      status:
+        example: success
+        type: string
+    type: object
+  handler.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        example: 3600
+        type: integer
+      role:
+        allOf:
+        - $ref: '#/definitions/auth.Role'
+        example: creator
+      token_type:
+        example: Bearer
+        type: string
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  handler.UserEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/ds.User'
+      status:
+        example: success
+        type: string
+    type: object
+  handler.likeRequest:
+    properties:
+      value:
+        example: 1
+        type: integer
+    type: object
+  handler.publishRequest:
+    properties:
+      price_per_month:
+        type: integer
+      ram_gb:
+        type: integer
+      short_description:
+        type: string
+      tariff_name:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Каталог облачных тарифов. Публичное чтение, JWT для методов создателя.
+    Регистрация и вход доступны без JWT.
+  title: Cloud Tariffs API
+  version: "4.0"
+paths:
+  /tariffs:
+    get:
+      description: Чтение доступно независимо от JWT. Валидный Authorization добавляет
+        персональные is_owner/is_liked; неверный, истёкший или отозванный JWT трактуется
+        как гостевой запрос.
+      parameters:
+      - description: Bearer <JWT>, необязательно
+        in: header
+        name: Authorization
+        type: string
+      - description: Максимальная цена в рублях, целое >= 0
+        in: query
+        minimum: 0
+        name: priceLimit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ListEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      summary: Список опубликованных тарифов
+      tags:
+      - Тарифы
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Название, 1–100 символов
+        in: formData
+        name: tariff_name
+        required: true
+        type: string
+      - description: Фото JPEG/PNG/GIF/WebP, до 10 MiB
+        in: formData
+        name: image
+        type: file
+      - description: Видео MP4/WebM, до 50 MiB
+        in: formData
+        name: video
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.TariffEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "401":
+          description: Нет JWT, токен истёк или отозван
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "403":
+          description: Чужой тариф или недопустимая роль
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "503":
+          description: Redis недоступен
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Создать черновик с фото и видео
+      tags:
+      - Тарифы
+  /tariffs/{id}:
+    delete:
+      parameters:
+      - description: Положительный ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.DeleteEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "401":
+          description: Нет JWT, токен истёк или отозван
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "403":
+          description: Чужой тариф или недопустимая роль
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "503":
+          description: Redis недоступен
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Логически удалить свой тариф
+      tags:
+      - Тарифы
+  /tariffs/{id}/likes:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Положительный ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: 1 — поставить, 0 — отменить
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.likeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LikeEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "401":
+          description: Нет JWT, токен истёк или отозван
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "403":
+          description: Чужой тариф или недопустимая роль
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "503":
+          description: Redis недоступен
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Поставить или отменить свой лайк
+      tags:
+      - Тарифы
+  /tariffs/{id}/publication:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Положительный ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: Поля публикации
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.publishRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.TariffEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "401":
+          description: Нет JWT, токен истёк или отозван
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "403":
+          description: Чужой тариф или недопустимая роль
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "503":
+          description: Redis недоступен
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Опубликовать свой черновик
+      tags:
+      - Тарифы
+  /tariffs/draft:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.TariffEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "401":
+          description: Нет JWT, токен истёк или отозван
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "403":
+          description: Чужой тариф или недопустимая роль
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "503":
+          description: Redis недоступен
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Единственный черновик текущего пользователя
+      tags:
+      - Тарифы
+  /tariffs/feed:
+    get:
+      description: Чтение доступно независимо от JWT. Валидный Authorization добавляет
+        персональные is_owner/is_liked; неверный, истёкший или отозванный JWT трактуется
+        как гостевой запрос.
+      parameters:
+      - description: Bearer <JWT>, необязательно
+        in: header
+        name: Authorization
+        type: string
+      - description: ID опубликованной карточки
+        in: query
+        name: id
+        type: integer
+      - description: Следующая карточка; требует id
+        in: query
+        name: next
+        type: boolean
+      - description: Следующая после ID; отдельно от id и next
+        in: query
+        name: after_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.TariffEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      summary: Карточка ленты
+      tags:
+      - Тарифы
+  /users:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Логин 3–50 [a-z0-9_.-], пароль 8–72 байта
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.Credentials'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.UserEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      summary: Зарегистрировать пользователя
+      tags:
+      - Пользователи
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Логин и пароль
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.Credentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.TokenEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "401":
+          description: Неверный логин или пароль
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      summary: Войти и получить JWT
+      tags:
+      - Пользователи
+  /users/logout:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LogoutEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "401":
+          description: Нет JWT, токен истёк или отозван
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "403":
+          description: Чужой тариф или недопустимая роль
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+        "503":
+          description: Redis недоступен
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Выйти и отозвать текущий JWT
+      tags:
+      - Пользователи
+securityDefinitions:
+  BearerAuth:
+    description: Введите Bearer и пробел, затем access_token из data ответа POST /users/login.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

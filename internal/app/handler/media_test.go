@@ -1,62 +1,47 @@
 package handler
 
 import (
+	"cloud-tariffs-backend/internal/app/ds"
 	"context"
 	"errors"
-	"net/http/httptest"
 	"testing"
-
-	"cloud-tariffs-backend/internal/app/ds"
-	"cloud-tariffs-backend/internal/app/repository"
-	"github.com/gin-gonic/gin"
-	"github.com/minio/minio-go/v7"
 )
 
-type missingMediaRepository struct {
+type mediaRepository struct {
 	Repository
-	tariff ds.CloudTariff
-	hidden bool
+	missing bool
+	calls   int
 }
 
-func (r missingMediaRepository) VisibleTariff(uint, uint) (*ds.CloudTariff, error) {
-	if r.hidden {
-		return nil, repository.ErrTariffNotFound
+func (r *mediaRepository) MediaURL(_ context.Context, name string) (string, error) {
+	r.calls++
+	if r.missing {
+		return "", errors.New("missing object")
 	}
-	return &r.tariff, nil
+	return "http://minio.example/test-bucket/" + name + "?X-Amz-Signature=test", nil
 }
-func (r missingMediaRepository) OpenMedia(context.Context, string) (*minio.Object, minio.ObjectInfo, error) {
-	return nil, minio.ObjectInfo{}, errors.New("missing object")
-}
-func TestMissingMediaUsesStaticURLs(t *testing.T) {
-	dto := serialize(ds.CloudTariff{TariffID: 1})
-	if dto.ImageURL != fallbackImageURL || dto.VideoURL != fallbackVideoURL {
-		t.Fatal("empty media must use static URLs")
-	}
-	for _, hasName := range []bool{false, true} {
-		tariff := ds.CloudTariff{TariffID: 1}
-		if hasName {
-			tariff.ImageURL = "missing.jpg"
-			tariff.VideoURL = "missing.mp4"
-		}
-		for kind, fallback := range map[string]string{"image": fallbackImageURL, "video": fallbackVideoURL} {
-			gin.SetMode(gin.TestMode)
-			router := gin.New()
-			router.GET("/api/tariffs/:id/"+kind, NewHandler(missingMediaRepository{tariff: tariff}).MediaAPI)
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, httptest.NewRequest("GET", "/api/tariffs/1/"+kind, nil))
-			if w.Code != 302 || w.Header().Get("Location") != fallback {
-				t.Fatalf("%s: %d %s", kind, w.Code, w.Header().Get("Location"))
+func TestMediaLinksAndFallbacks(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		missing      bool
+		calls        int
+		image, video string
+	}{
+		{"", false, 0, fallbackImageURL, fallbackVideoURL},
+		{"missing", true, 2, fallbackImageURL, fallbackVideoURL},
+		{"existing", false, 2, "http://minio.example/test-bucket/existing.jpg?X-Amz-Signature=test", "http://minio.example/test-bucket/existing.mp4?X-Amz-Signature=test"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := &mediaRepository{missing: tc.missing}
+			tariff := ds.CloudTariff{TariffID: 7}
+			if tc.name != "" {
+				tariff.ImageURL = tc.name + ".jpg"
+				tariff.VideoURL = tc.name + ".mp4"
 			}
-		}
-	}
-}
-func TestHiddenMediaStillReturnsNotFound(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	router.GET("/api/tariffs/:id/image", NewHandler(missingMediaRepository{hidden: true}).MediaAPI)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, httptest.NewRequest("GET", "/api/tariffs/1/image", nil))
-	if w.Code != 404 || w.Header().Get("Location") != "" {
-		t.Fatal("visibility must be checked before media fallback")
+			dto := NewHandler(repo).serialize(context.Background(), tariff, 0)
+			if dto.ImageURL != tc.image || dto.VideoURL != tc.video || repo.calls != tc.calls {
+				t.Fatalf("unexpected media: %+v, calls=%d", dto, repo.calls)
+			}
+		})
 	}
 }

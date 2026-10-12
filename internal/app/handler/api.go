@@ -1,9 +1,9 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -98,13 +98,28 @@ type TariffResponse struct {
 	Creator  CreatorResponse `json:"creator"`
 }
 
-func serialize(t ds.CloudTariff) TariffResponse {
-	if t.CreatorID == currentuser.Get().ID() {
+func (h *Handler) serialize(ctx context.Context, t ds.CloudTariff, viewer uint) TariffResponse {
+	t.IsOwner = 0
+	if viewer != 0 && t.CreatorID == viewer {
 		t.IsOwner = 1
 	}
-	imageURL, videoURL := mediaURLs(t)
+	imageURL, videoURL := h.mediaURLs(ctx, t)
 	return TariffResponse{CloudTariff: t, ImageURL: imageURL, VideoURL: videoURL, Creator: CreatorResponse{UserID: t.Creator.UserID, Login: t.Creator.Login}}
 }
+
+// ListAPI godoc
+// @Summary Список опубликованных тарифов
+// @Tags Тарифы
+// @Produce json
+// @Description Чтение доступно независимо от JWT. Валидный Authorization добавляет персональные is_owner/is_liked; неверный, истёкший или отозванный JWT трактуется как гостевой запрос.
+// @Param Authorization header string false "Bearer <JWT>, необязательно"
+// @Param priceLimit query int false "Максимальная цена в рублях, целое >= 0" minimum(0)
+// @Success 200 {object} ListEnvelope
+// @Failure 400 {object} ErrorEnvelope
+// @Failure 404 {object} ErrorEnvelope
+// @Failure 409 {object} ErrorEnvelope
+// @Failure 500 {object} ErrorEnvelope
+// @Router /tariffs [get]
 func (h *Handler) ListAPI(c *gin.Context) {
 	var max *int
 	for k, v := range c.Request.URL.Query() {
@@ -125,17 +140,33 @@ func (h *Handler) ListAPI(c *gin.Context) {
 		Fail(c, 400, "priceLimit не может быть пустым")
 		return
 	}
-	list, err := h.Repository.GetPublishedTariffs(max)
+	list, err := h.Repository.GetPublishedTariffs(max, currentuser.Get(c).ID())
 	if err != nil {
 		apiError(c, err)
 		return
 	}
 	result := make([]TariffResponse, 0, len(list))
 	for _, t := range list {
-		result = append(result, serialize(t))
+		result = append(result, h.serialize(c.Request.Context(), t, currentuser.Get(c).ID()))
 	}
 	success(c, 200, result)
 }
+
+// FeedAPI godoc
+// @Summary Карточка ленты
+// @Tags Тарифы
+// @Produce json
+// @Description Чтение доступно независимо от JWT. Валидный Authorization добавляет персональные is_owner/is_liked; неверный, истёкший или отозванный JWT трактуется как гостевой запрос.
+// @Param Authorization header string false "Bearer <JWT>, необязательно"
+// @Param id query int false "ID опубликованной карточки"
+// @Param next query boolean false "Следующая карточка; требует id"
+// @Param after_id query int false "Следующая после ID; отдельно от id и next"
+// @Success 200 {object} TariffEnvelope
+// @Failure 400 {object} ErrorEnvelope
+// @Failure 404 {object} ErrorEnvelope
+// @Failure 409 {object} ErrorEnvelope
+// @Failure 500 {object} ErrorEnvelope
+// @Router /tariffs/feed [get]
 func (h *Handler) FeedAPI(c *gin.Context) {
 	query := c.Request.URL.Query()
 	for key, values := range query {
@@ -188,9 +219,9 @@ func (h *Handler) FeedAPI(c *gin.Context) {
 	var tariff *ds.CloudTariff
 	exactCard := hasID && !next
 	if exactCard {
-		tariff, err = h.Repository.GetPublishedTariff(uint(id))
+		tariff, err = h.Repository.GetPublishedTariff(uint(id), currentuser.Get(c).ID())
 	} else {
-		tariff, err = h.Repository.GetNextPublishedTariff(uint(id))
+		tariff, err = h.Repository.GetNextPublishedTariff(uint(id), currentuser.Get(c).ID())
 	}
 	if errors.Is(err, repository.ErrTariffNotFound) && !exactCard {
 		success(c, 200, nil)
@@ -200,28 +231,28 @@ func (h *Handler) FeedAPI(c *gin.Context) {
 		apiError(c, err)
 		return
 	}
-	success(c, 200, serialize(*tariff))
+	success(c, 200, h.serialize(c.Request.Context(), *tariff, currentuser.Get(c).ID()))
 }
-func (h *Handler) DetailAPI(c *gin.Context) {
-	if !noQuery(c) {
-		return
-	}
-	id, ok := parseID(c)
-	if !ok {
-		return
-	}
-	t, err := h.Repository.GetPublishedTariff(id)
-	if err != nil {
-		apiError(c, err)
-		return
-	}
-	success(c, 200, serialize(*t))
-}
+
+// DraftAPI godoc
+// @Summary Единственный черновик текущего пользователя
+// @Tags Тарифы
+// @Produce json
+// @Security BearerAuth
+// @Failure 401 {object} ErrorEnvelope "Нет JWT, токен истёк или отозван"
+// @Failure 403 {object} ErrorEnvelope "Чужой тариф или недопустимая роль"
+// @Failure 503 {object} ErrorEnvelope "Redis недоступен"
+// @Success 200 {object} TariffEnvelope
+// @Failure 400 {object} ErrorEnvelope
+// @Failure 404 {object} ErrorEnvelope
+// @Failure 409 {object} ErrorEnvelope
+// @Failure 500 {object} ErrorEnvelope
+// @Router /tariffs/draft [get]
 func (h *Handler) DraftAPI(c *gin.Context) {
 	if !noQuery(c) {
 		return
 	}
-	t, err := h.Repository.GetDraftTariff(currentuser.Get().ID())
+	t, err := h.Repository.GetDraftTariff(currentuser.Get(c).ID())
 	if err != nil {
 		apiError(c, err)
 		return
@@ -230,8 +261,27 @@ func (h *Handler) DraftAPI(c *gin.Context) {
 		success(c, 200, nil)
 		return
 	}
-	success(c, 200, serialize(*t))
+	success(c, 200, h.serialize(c.Request.Context(), *t, currentuser.Get(c).ID()))
 }
+
+// CreateAPI godoc
+// @Summary Создать черновик с фото и видео
+// @Tags Тарифы
+// @Produce json
+// @Accept multipart/form-data
+// @Param tariff_name formData string true "Название, 1–100 символов"
+// @Param image formData file false "Фото JPEG/PNG/GIF/WebP, до 10 MiB"
+// @Param video formData file false "Видео MP4/WebM, до 50 MiB"
+// @Security BearerAuth
+// @Failure 401 {object} ErrorEnvelope "Нет JWT, токен истёк или отозван"
+// @Failure 403 {object} ErrorEnvelope "Чужой тариф или недопустимая роль"
+// @Failure 503 {object} ErrorEnvelope "Redis недоступен"
+// @Success 201 {object} TariffEnvelope
+// @Failure 400 {object} ErrorEnvelope
+// @Failure 404 {object} ErrorEnvelope
+// @Failure 409 {object} ErrorEnvelope
+// @Failure 500 {object} ErrorEnvelope
+// @Router /tariffs [post]
 func (h *Handler) CreateAPI(c *gin.Context) {
 	if !noQuery(c) {
 		return
@@ -284,8 +334,8 @@ func (h *Handler) CreateAPI(c *gin.Context) {
 		apiError(c, err)
 		return
 	}
-	t := ds.CloudTariff{TariffName: name, TariffStatus: ds.StatusDraft, CreatorID: currentuser.Get().ID()}
-	t.Creator, err = h.Repository.GetUser(currentuser.Get().ID())
+	t := ds.CloudTariff{TariffName: name, TariffStatus: ds.StatusDraft, CreatorID: currentuser.Get(c).ID()}
+	t.Creator, err = h.Repository.GetUser(currentuser.Get(c).ID())
 	if err != nil {
 		apiError(c, err)
 		return
@@ -294,8 +344,7 @@ func (h *Handler) CreateAPI(c *gin.Context) {
 		apiError(c, err)
 		return
 	}
-	c.Header("Location", "/api/tariffs/draft")
-	success(c, 201, serialize(t))
+	success(c, 201, h.serialize(c.Request.Context(), t, currentuser.Get(c).ID()))
 }
 
 type publishRequest struct {
@@ -305,6 +354,23 @@ type publishRequest struct {
 	RAM         *int   `json:"ram_gb"`
 }
 
+// PublishAPI godoc
+// @Summary Опубликовать свой черновик
+// @Tags Тарифы
+// @Produce json
+// @Param id path int true "Положительный ID" minimum(1)
+// @Accept json
+// @Param body body publishRequest true "Поля публикации"
+// @Security BearerAuth
+// @Failure 401 {object} ErrorEnvelope "Нет JWT, токен истёк или отозван"
+// @Failure 403 {object} ErrorEnvelope "Чужой тариф или недопустимая роль"
+// @Failure 503 {object} ErrorEnvelope "Redis недоступен"
+// @Success 200 {object} TariffEnvelope
+// @Failure 400 {object} ErrorEnvelope
+// @Failure 404 {object} ErrorEnvelope
+// @Failure 409 {object} ErrorEnvelope
+// @Failure 500 {object} ErrorEnvelope
+// @Router /tariffs/{id}/publication [put]
 func (h *Handler) PublishAPI(c *gin.Context) {
 	if !noQuery(c) {
 		return
@@ -323,18 +389,34 @@ func (h *Handler) PublishAPI(c *gin.Context) {
 		Fail(c, 400, "Нужны название (1–100), описание (1–500), цена >= 0 и RAM > 0 (целые до 2147483647)")
 		return
 	}
-	err := h.Repository.PublishDraftTariff(repository.PublishTariffInput{TariffID: id, CreatorID: currentuser.Get().ID(), TariffName: body.Name, ShortDescription: body.Description, PricePerMonth: *body.Price, RAMGB: *body.RAM})
+	err := h.Repository.PublishDraftTariff(repository.PublishTariffInput{TariffID: id, CreatorID: currentuser.Get(c).ID(), TariffName: body.Name, ShortDescription: body.Description, PricePerMonth: *body.Price, RAMGB: *body.RAM})
 	if err != nil {
 		apiError(c, err)
 		return
 	}
-	t, err := h.Repository.GetPublishedTariff(id)
+	t, err := h.Repository.GetPublishedTariff(id, currentuser.Get(c).ID())
 	if err != nil {
 		apiError(c, err)
 		return
 	}
-	success(c, 200, serialize(*t))
+	success(c, 200, h.serialize(c.Request.Context(), *t, currentuser.Get(c).ID()))
 }
+
+// DeleteAPI godoc
+// @Summary Логически удалить свой тариф
+// @Tags Тарифы
+// @Produce json
+// @Param id path int true "Положительный ID" minimum(1)
+// @Security BearerAuth
+// @Failure 401 {object} ErrorEnvelope "Нет JWT, токен истёк или отозван"
+// @Failure 403 {object} ErrorEnvelope "Чужой тариф или недопустимая роль"
+// @Failure 503 {object} ErrorEnvelope "Redis недоступен"
+// @Success 200 {object} DeleteEnvelope
+// @Failure 400 {object} ErrorEnvelope
+// @Failure 404 {object} ErrorEnvelope
+// @Failure 409 {object} ErrorEnvelope
+// @Failure 500 {object} ErrorEnvelope
+// @Router /tariffs/{id} [delete]
 func (h *Handler) DeleteAPI(c *gin.Context) {
 	if !noQuery(c) || !noBody(c) {
 		return
@@ -343,12 +425,34 @@ func (h *Handler) DeleteAPI(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if err := h.Repository.DeleteTariff(c.Request.Context(), id); err != nil {
+	if err := h.Repository.DeleteTariff(c.Request.Context(), id, currentuser.Get(c).ID()); err != nil {
 		apiError(c, err)
 		return
 	}
 	success(c, 200, gin.H{"deleted": true})
 }
+
+type likeRequest struct {
+	Value *int `json:"value" example:"1"`
+}
+
+// LikeAPI godoc
+// @Summary Поставить или отменить свой лайк
+// @Tags Тарифы
+// @Produce json
+// @Param id path int true "Положительный ID" minimum(1)
+// @Accept json
+// @Param body body likeRequest true "1 — поставить, 0 — отменить"
+// @Security BearerAuth
+// @Failure 401 {object} ErrorEnvelope "Нет JWT, токен истёк или отозван"
+// @Failure 403 {object} ErrorEnvelope "Чужой тариф или недопустимая роль"
+// @Failure 503 {object} ErrorEnvelope "Redis недоступен"
+// @Success 200 {object} LikeEnvelope
+// @Failure 400 {object} ErrorEnvelope
+// @Failure 404 {object} ErrorEnvelope
+// @Failure 409 {object} ErrorEnvelope
+// @Failure 500 {object} ErrorEnvelope
+// @Router /tariffs/{id}/likes [post]
 func (h *Handler) LikeAPI(c *gin.Context) {
 	if !noQuery(c) {
 		return
@@ -357,9 +461,7 @@ func (h *Handler) LikeAPI(c *gin.Context) {
 	if !ok {
 		return
 	}
-	var body struct {
-		Value *int `json:"value"`
-	}
+	var body likeRequest
 	if !strictJSON(c, &body) {
 		return
 	}
@@ -367,21 +469,31 @@ func (h *Handler) LikeAPI(c *gin.Context) {
 		Fail(c, 400, "value должен быть 0 или 1")
 		return
 	}
-	count, err := h.Repository.SetLike(c.Request.Context(), id, *body.Value)
+	count, err := h.Repository.SetLike(c.Request.Context(), id, currentuser.Get(c).ID(), *body.Value)
 	if err != nil {
 		apiError(c, err)
 		return
 	}
 	success(c, 200, gin.H{"tariff_id": id, "is_liked": *body.Value, "like_count": count})
 }
+
+// RegisterAPI godoc
+// @Summary Зарегистрировать пользователя
+// @Tags Пользователи
+// @Produce json
+// @Accept json
+// @Param body body Credentials true "Логин 3–50 [a-z0-9_.-], пароль 8–72 байта"
+// @Success 201 {object} UserEnvelope
+// @Failure 400 {object} ErrorEnvelope
+// @Failure 404 {object} ErrorEnvelope
+// @Failure 409 {object} ErrorEnvelope
+// @Failure 500 {object} ErrorEnvelope
+// @Router /users [post]
 func (h *Handler) RegisterAPI(c *gin.Context) {
 	if !noQuery(c) {
 		return
 	}
-	var body struct {
-		Login    string `json:"login"`
-		Password string `json:"password"`
-	}
+	var body Credentials
 	if !strictJSON(c, &body) {
 		return
 	}
@@ -406,79 +518,5 @@ func (h *Handler) RegisterAPI(c *gin.Context) {
 		apiError(c, err)
 		return
 	}
-	c.Header("Location", fmt.Sprintf("/api/users/%d/tariffs", u.UserID))
 	success(c, 201, u)
-}
-func (h *Handler) LoginAPI(c *gin.Context) {
-	if !noQuery(c) {
-		return
-	}
-	var body struct {
-		Login    string `json:"login"`
-		Password string `json:"password"`
-	}
-	if !strictJSON(c, &body) {
-		return
-	}
-	if strings.TrimSpace(body.Login) == "" || body.Password == "" {
-		Fail(c, 400, "Нужны login и password")
-		return
-	}
-	success(c, 200, gin.H{"stub": true, "authenticated": false, "current_user_id": currentuser.Get().ID(), "message": "Заглушка ЛР3: пароль не проверяется, сессия не создаётся, пользователь не меняется"})
-}
-func (h *Handler) LogoutAPI(c *gin.Context) {
-	if !noQuery(c) || !noBody(c) {
-		return
-	}
-	success(c, 200, gin.H{"stub": true, "current_user_id": currentuser.Get().ID(), "message": "Заглушка ЛР3: сессии отсутствуют, пользователь не меняется"})
-}
-func (h *Handler) UserTariffsAPI(c *gin.Context) {
-	if !noQuery(c) {
-		return
-	}
-	id, ok := parseID(c)
-	if !ok {
-		return
-	}
-	u, ts, err := h.Repository.UserTariffs(id)
-	if err != nil {
-		apiError(c, err)
-		return
-	}
-	list := make([]TariffResponse, 0, len(ts))
-	for _, t := range ts {
-		list = append(list, serialize(t))
-	}
-	success(c, 200, gin.H{"user": u, "tariffs": list})
-}
-func (h *Handler) MediaAPI(c *gin.Context) {
-	id, ok := parseID(c)
-	if !ok {
-		return
-	}
-	t, err := h.Repository.VisibleTariff(id, currentuser.Get().ID())
-	if err != nil {
-		apiError(c, err)
-		return
-	}
-	video := strings.HasSuffix(c.FullPath(), "/video")
-	name := t.ImageURL
-	fallback := fallbackImageURL
-	if video {
-		name = t.VideoURL
-		fallback = fallbackVideoURL
-	}
-	if name == "" {
-		c.Redirect(http.StatusFound, fallback)
-		return
-	}
-	obj, info, err := h.Repository.OpenMedia(c.Request.Context(), name)
-	if err != nil {
-		c.Redirect(http.StatusFound, fallback)
-		return
-	}
-	defer obj.Close()
-	c.Header("Content-Type", info.ContentType)
-	c.Header("X-Content-Type-Options", "nosniff")
-	http.ServeContent(c.Writer, c.Request, name, info.LastModified, obj)
 }

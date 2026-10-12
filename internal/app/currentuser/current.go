@@ -1,16 +1,19 @@
+// Package currentuser reads the authenticated identity from each Gin request.
 package currentuser
 
-import "sync"
+import "github.com/gin-gonic/gin"
 
-const CreatorID uint = 1
-
-type Identity struct{ id uint }
-
-var once sync.Once
-var instance *Identity
-
-func Get() *Identity {
-	once.Do(func() { instance = &Identity{id: CreatorID} })
-	return instance
+type Identity struct {
+	UserID uint
+	Role   string
 }
-func (i *Identity) ID() uint { return i.id }
+
+func Get(c *gin.Context) Identity {
+	value, exists := c.Get("identity")
+	if !exists {
+		return Identity{}
+	}
+	identity, _ := value.(Identity)
+	return identity
+}
+func (i Identity) ID() uint { return i.UserID }

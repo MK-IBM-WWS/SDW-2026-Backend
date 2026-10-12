@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cloud-tariffs-backend/internal/app/currentuser"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm/clause"
 	"log"
@@ -76,9 +75,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	user := ds.User{UserID: currentuser.CreatorID, Login: "student", PasswordHash: string(hash)}
+	user := ds.User{UserID: 1, Login: "student", PasswordHash: string(hash)}
 	if err := db.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}}, DoNothing: true}).Create(&user).Error; err != nil {
 		log.Fatal(err)
+	}
+	// Repair only the known lab-2 seed placeholder, preserving real account passwords.
+	for login, password := range map[string]string{"student": "student123", "moderator": "moderator123", "guest": "guest123"} {
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := db.Model(&ds.User{}).Where("login = ? AND password_hash = ?", login, "lab2-password-not-for-production").Update("password_hash", string(hash)).Error; err != nil {
+			log.Fatal(err)
+		}
 	}
 	// Convert the old lab's full MinIO URLs into object names without touching files.
 	if err := db.Exec(`UPDATE cloud_tariffs SET

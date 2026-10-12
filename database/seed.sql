@@ -1,11 +1,12 @@
+-- ЛР4: demo passwords student123 / moderator123 / guest123; existing rows are preserved.
 -- Выполните этот файл через пункт «SQL-запрос» в Adminer после миграции.
 -- Скрипт можно запускать повторно: ON CONFLICT не создаёт дубликаты.
 
 INSERT INTO users (user_id, login, password_hash, is_moderator)
 VALUES
-    (1, 'student', 'lab2-password-not-for-production', false),
-    (2, 'moderator', 'lab2-password-not-for-production', true),
-    (3, 'guest', 'lab2-password-not-for-production', false)
+    (1, 'student', '$2a$10$.M7MbEjq6vrUwL.KeCg3oeNAwahCB2xhjtNfv1HT88HDrvaw8L/ta', false),
+    (2, 'moderator', '$2a$10$HONEAovmKQpZSJ21.9A5euZMUqF5sRMs4n6XvItPTr6S1kwcQLagC', true),
+    (3, 'guest', '$2a$10$D67iBz/HMA/tsvES6P9CmuxBPmohW4flBE8I9ioseSB8ZMj6iZUee', false)
 ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO cloud_tariffs (

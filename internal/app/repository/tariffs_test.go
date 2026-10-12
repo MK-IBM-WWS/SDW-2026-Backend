@@ -47,13 +47,13 @@ func TestLifecycleAndVisibility(t *testing.T) {
 	own := add(t, r, 1, ds.StatusDraft, 100)
 	other := add(t, r, 2, ds.StatusPublished, 200)
 	deleted := add(t, r, 1, ds.StatusDeleted, 1)
-	if _, err := r.GetPublishedTariff(own.TariffID); !errors.Is(err, ErrTariffNotFound) {
+	if _, err := r.GetPublishedTariff(own.TariffID, 1); !errors.Is(err, ErrTariffNotFound) {
 		t.Fatalf("draft exposed: %v", err)
 	}
-	if _, err := r.GetPublishedTariff(deleted.TariffID); !errors.Is(err, ErrTariffNotFound) {
+	if _, err := r.GetPublishedTariff(deleted.TariffID, 1); !errors.Is(err, ErrTariffNotFound) {
 		t.Fatal("deleted exposed")
 	}
-	if err := r.DeleteTariff(ctx, other.TariffID); !errors.Is(err, ErrForbidden) {
+	if err := r.DeleteTariff(ctx, other.TariffID, 1); !errors.Is(err, ErrForbidden) {
 		t.Fatalf("foreign deletion: %v", err)
 	}
 	in := PublishTariffInput{TariffID: own.TariffID, CreatorID: 1, TariffName: "Published", ShortDescription: "desc", PricePerMonth: 100, RAMGB: 4}
@@ -63,28 +63,28 @@ func TestLifecycleAndVisibility(t *testing.T) {
 	if err := r.PublishDraftTariff(in); !errors.Is(err, ErrInvalidState) {
 		t.Fatalf("republish: %v", err)
 	}
-	pub, err := r.GetPublishedTariff(own.TariffID)
+	pub, err := r.GetPublishedTariff(own.TariffID, 1)
 	if err != nil || pub.FormedAt == nil || pub.Creator.Login != "student" {
 		t.Fatalf("publish/creator failed: %+v %v", pub, err)
 	}
 	cap := 150
-	list, err := r.GetPublishedTariffs(&cap)
+	list, err := r.GetPublishedTariffs(&cap, 1)
 	if err != nil || len(list) != 1 || list[0].IsOwner != 1 {
 		t.Fatalf("filter: %+v %v", list, err)
 	}
 	for _, v := range []int{1, 1} {
-		n, err := r.SetLike(ctx, own.TariffID, v)
+		n, err := r.SetLike(ctx, own.TariffID, 1, v)
 		if err != nil || n != 1 {
 			t.Fatalf("duplicate like: %d %v", n, err)
 		}
 	}
 	for _, v := range []int{0, 0} {
-		n, err := r.SetLike(ctx, own.TariffID, v)
+		n, err := r.SetLike(ctx, own.TariffID, 1, v)
 		if err != nil || n != 0 {
 			t.Fatalf("unlike: %d %v", n, err)
 		}
 	}
-	if err := r.DeleteTariff(ctx, own.TariffID); err != nil {
+	if err := r.DeleteTariff(ctx, own.TariffID, 1); err != nil {
 		t.Fatal(err)
 	}
 	var persisted ds.CloudTariff
@@ -94,11 +94,11 @@ func TestLifecycleAndVisibility(t *testing.T) {
 	if err := r.PublishDraftTariff(in); !errors.Is(err, ErrTariffNotFound) {
 		t.Fatal("deleted republished")
 	}
-	if _, err := r.SetLike(ctx, own.TariffID, 1); !errors.Is(err, ErrTariffNotFound) {
+	if _, err := r.SetLike(ctx, own.TariffID, 1, 1); !errors.Is(err, ErrTariffNotFound) {
 		t.Fatal("deleted liked")
 	}
-	if _, err := r.VisibleTariff(own.TariffID, 1); !errors.Is(err, gorm.ErrRecordNotFound) {
-		t.Fatal("deleted media visible")
+	if _, err := r.GetPublishedTariff(own.TariffID, 1); !errors.Is(err, ErrTariffNotFound) {
+		t.Fatal("deleted tariff visible")
 	}
 }
 func TestDraftIsolationAndUniqueIndex(t *testing.T) {
@@ -112,30 +112,56 @@ func TestDraftIsolationAndUniqueIndex(t *testing.T) {
 	if err := r.CreateDraftTariff(&ds.CloudTariff{TariffName: "second", CreatorID: 1, TariffStatus: ds.StatusDraft}); err == nil {
 		t.Fatal("second draft allowed")
 	}
-	if _, err := r.VisibleTariff(b.TariffID, 1); !errors.Is(err, gorm.ErrRecordNotFound) {
+	if _, err := r.GetPublishedTariff(b.TariffID, 1); !errors.Is(err, ErrTariffNotFound) {
 		t.Fatal("foreign draft visible")
 	}
 	if err := r.PublishDraftTariff(PublishTariffInput{TariffID: b.TariffID, CreatorID: 1}); !errors.Is(err, ErrForbidden) {
 		t.Fatal("foreign draft published")
 	}
-	if err := r.DeleteTariff(context.Background(), a.TariffID); err != nil {
+	if err := r.DeleteTariff(context.Background(), a.TariffID, 1); err != nil {
 		t.Fatal(err)
 	}
 	if err := r.CreateDraftTariff(&ds.CloudTariff{TariffName: "new", CreatorID: 1, TariffStatus: ds.StatusDraft}); err != nil {
 		t.Fatal(err)
 	}
 }
-func TestUserTariffsAndFeed(t *testing.T) {
+func TestFeedWrap(t *testing.T) {
 	r := testRepo(t)
 	a := add(t, r, 1, ds.StatusPublished, 100)
 	b := add(t, r, 2, ds.StatusPublished, 200)
 	add(t, r, 1, ds.StatusDeleted, 1)
-	_, list, err := r.UserTariffs(1)
-	if err != nil || len(list) != 1 || list[0].TariffID != a.TariffID {
-		t.Fatal("user tariff filter failed")
-	}
-	next, err := r.GetNextPublishedTariff(b.TariffID)
+	next, err := r.GetNextPublishedTariff(b.TariffID, 1)
 	if err != nil || next.TariffID != a.TariffID {
 		t.Fatal("feed wrap failed")
+	}
+}
+
+func TestTwoUsersHaveSeparateLikesAndOwnership(t *testing.T) {
+	r := testRepo(t)
+	ctx := context.Background()
+	item := add(t, r, 2, ds.StatusPublished, 100)
+	if _, err := r.SetLike(ctx, item.TariffID, 1, 1); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		user         uint
+		liked, owner int
+	}{{0, 0, 0}, {1, 1, 0}, {2, 0, 1}} {
+		list, err := r.GetPublishedTariffs(nil, tc.user)
+		if err != nil || len(list) != 1 || list[0].IsLiked != tc.liked || list[0].IsOwner != tc.owner || list[0].LikeCount != 1 {
+			t.Fatalf("user %d: %+v %v", tc.user, list, err)
+		}
+	}
+	if _, err := r.SetLike(ctx, item.TariffID, 2, 1); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := r.SetLike(ctx, item.TariffID, 1, 0); err != nil || n != 1 {
+		t.Fatal("unlike affected another user")
+	}
+	if err := r.DeleteTariff(ctx, item.TariffID, 1); !errors.Is(err, ErrForbidden) {
+		t.Fatal("foreign deletion allowed")
+	}
+	if err := r.DeleteTariff(ctx, item.TariffID, 2); err != nil {
+		t.Fatal("real owner cannot delete")
 	}
 }

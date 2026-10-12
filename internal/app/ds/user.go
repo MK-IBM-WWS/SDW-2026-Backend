@@ -3,7 +3,7 @@ package ds
 type User struct {
 	UserID       uint   `gorm:"primaryKey" json:"user_id"`
 	Login        string `gorm:"type:varchar(50);uniqueIndex;not null" json:"login"`
-	PasswordHash string `gorm:"type:varchar(255);not null" json:"-"`
+	PasswordHash string `gorm:"type:varchar(255);not null" json:"-" swaggerignore:"true"`
 	IsModerator  bool   `gorm:"not null;default:false" json:"is_moderator"`
 }
 
