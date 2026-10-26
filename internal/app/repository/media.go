@@ -29,6 +29,7 @@ type Upload struct {
 }
 
 // Inspect actual bytes, not the user-controlled extension or Content-Type.
+// Проверяем реальное содержимое и размер файла. Имя или Content-Type от клиента могут быть неверными.
 func ValidateUpload(_ context.Context, h *multipart.FileHeader, video bool) (*Upload, error) {
 	if h == nil {
 		return nil, nil
@@ -61,6 +62,8 @@ func ValidateUpload(_ context.Context, h *multipart.FileHeader, video bool) (*Up
 	}
 	return &Upload{Header: h, Type: typ, Extension: ext}, nil
 }
+
+// Генерируем случайное имя из латинских символов и записываем содержимое файла в MinIO.
 func (r *Repository) upload(ctx context.Context, u *Upload, prefix string) (string, error) {
 	if u == nil {
 		return "", nil
@@ -81,6 +84,8 @@ func (r *Repository) upload(ctx context.Context, u *Upload, prefix string) (stri
 	}
 	return name, nil
 }
+
+// Если создание тарифа не удалось, убираем уже загруженные файлы, чтобы не оставлять мусор.
 func (r *Repository) cleanup(names ...string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -92,6 +97,8 @@ func (r *Repository) cleanup(names ...string) {
 		}
 	}
 }
+
+// Сначала загружаем файлы, затем сохраняем черновик. При сбое стараемся убрать лишние объекты.
 func (r *Repository) CreateWithFiles(ctx context.Context, t *ds.CloudTariff, img, vid *Upload) error {
 	existing, err := r.GetDraftTariff(t.CreatorID)
 	if err != nil {
@@ -118,12 +125,17 @@ func (r *Repository) CreateWithFiles(ctx context.Context, t *ds.CloudTariff, img
 
 // MediaURL signs direct downloads from the private bucket for 15 minutes.
 // Missing objects are reported so the response can use the local fallback.
+// ЛР4. Вместо отдельных GET для картинки и видео возвращаем подписанный адрес MinIO.
+// Ссылка действует 15 минут и доступна любому, у кого она есть. Это отдельная подпись MinIO, не наш JWT.
+// Logout или soft delete не отзывает уже выданную ссылку досрочно.
 func (r *Repository) MediaURL(ctx context.Context, name string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
+	// Перед подписанием проверяем наличие объекта: подпись адреса сама по себе не проверяет файл.
 	if _, err := r.minio.StatObject(ctx, r.bucket, name, minio.StatObjectOptions{}); err != nil {
 		return "", err
 	}
+	// Бакет остаётся закрытым. Ссылка разрешает получить только этот объект в течение своего срока.
 	url, err := r.minio.PresignedGetObject(ctx, r.bucket, name, 15*time.Minute, nil)
 	if err != nil {
 		return "", err

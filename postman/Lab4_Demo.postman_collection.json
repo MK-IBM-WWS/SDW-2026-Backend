@@ -1,0 +1,426 @@
+{
+  "info": {
+    "name": "Cloud Tariffs — ЛР4: демонстрация 1–8",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Скриншоты 1–2 выполняются в Swagger инкогнито. JWT из data.access_token вручную вставьте в token. До скриншота 6 создайте собственный черновик. Скриншот 8 — Redis CLI после logout. Подробно: DEMO_LAB4.md. JWT и blacklist, без frontend/cookies.\nВ списке тарифов автор представлен только полем user_id на верхнем уровне. Заголовки настраиваются через Authorization и Body без ручного заполнения Headers. Цвет галочек интерфейса не является настройкой коллекции."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "tariff_id",
+      "value": ""
+    },
+    {
+      "key": "login",
+      "value": "boris"
+    },
+    {
+      "key": "password",
+      "value": "BorisLab4_123"
+    }
+  ],
+  "item": [
+    {
+      "name": "Подготовка (не запускать повторно без необходимости)",
+      "item": [
+        {
+          "name": "Подготовка — зарегистрировать аккаунт (один раз)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/users",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "description": "Заголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{login}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Подготовка — собственный черновик",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/tariffs/draft",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "description": "Заголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200 && pm.response.json().data) pm.collectionVariables.set(\"tariff_id\", String(pm.response.json().data.tariff_id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Подготовка — создать черновик",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/tariffs",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "description": "Включите image/video и выберите resources/media/example.jpg и example.mp4. Без файлов API создаёт тариф с локальными заглушками. JWT из Swagger задаётся в переменной token.\nЗаголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman.\nСоздание отправляется как настоящая form-data. Для загрузки выберите файлы image/video и включите их строки; Content-Type с boundary добавит Postman.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "tariff_name",
+                  "type": "text",
+                  "value": "Тариф для демонстрации ЛР4"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true
+                },
+                {
+                  "key": "video",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"tariff_id\", String(pm.response.json().data.tariff_id));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Демонстрация в указанном порядке",
+      "item": [
+        {
+          "name": "Скриншот 3 — JWT из Swagger",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/tariffs/draft",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "description": "Вставьте data.access_token из Swagger в переменную token без слова Bearer.\nЗаголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Скриншот 4 — список с JWT",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/tariffs",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "description": "Заголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Автор указан плоским user_id, без creator и login\", function () {",
+                  "  const rows = pm.response.json().data;",
+                  "  pm.expect(rows).to.be.an(\"array\");",
+                  "  rows.forEach(function (row) {",
+                  "    pm.expect(row.user_id).to.be.a(\"number\");",
+                  "    [\"creator\", \"creator_id\", \"login\"].forEach(function (key) { pm.expect(row).not.to.have.property(key); });",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Скриншот 5 — список без JWT",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/tariffs",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "description": "Заголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Автор указан плоским user_id, без creator и login\", function () {",
+                  "  const rows = pm.response.json().data;",
+                  "  pm.expect(rows).to.be.an(\"array\");",
+                  "  rows.forEach(function (row) {",
+                  "    pm.expect(row.user_id).to.be.a(\"number\");",
+                  "    [\"creator\", \"creator_id\", \"login\"].forEach(function (key) { pm.expect(row).not.to.have.property(key); });",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Скриншот 6 — публикация гостем",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/api/tariffs/{{tariff_id}}/publication",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "description": "Заголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tariff_name\": \"Тариф ЛР4 опубликован\",\n  \"short_description\": \"Описание обновлено при публикации\",\n  \"price_per_month\": 1500,\n  \"ram_gb\": 16\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Скриншот 7 — публикация владельцем",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/api/tariffs/{{tariff_id}}/publication",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "description": "Заголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tariff_name\": \"Тариф ЛР4 опубликован\",\n  \"short_description\": \"Описание обновлено при публикации\",\n  \"price_per_month\": 1500,\n  \"ram_gb\": 16\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Updated fields\", function () { const d=pm.response.json().data; pm.expect(d.price_per_month).to.eql(1500); pm.expect(d.ram_gb).to.eql(16); pm.expect(d.tariff_status).to.eql(\"опубликован\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Перед скриншотом 8 — logout для blacklist",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/users/logout",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "description": "Заголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Проверка — отозванный JWT больше не действует",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/tariffs/draft",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "description": "Заголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Проверка — список с отозванным JWT всё равно доступен",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/tariffs",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "description": "Заголовки создаются автоматически: JWT через Authorization → Bearer Token, Content-Type через Body. Ручных заголовков нет. Цвет служебных галочек определяется Postman."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Автор указан плоским user_id, без creator и login\", function () {",
+                  "  const rows = pm.response.json().data;",
+                  "  pm.expect(rows).to.be.an(\"array\");",
+                  "  rows.forEach(function (row) {",
+                  "    pm.expect(row.user_id).to.be.a(\"number\");",
+                  "    [\"creator\", \"creator_id\", \"login\"].forEach(function (key) { pm.expect(row).not.to.have.property(key); });",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

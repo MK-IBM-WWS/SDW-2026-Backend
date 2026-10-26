@@ -3,17 +3,22 @@ module cloud-tariffs-backend
 go 1.25.0
 
 require (
+	// ЛР4: Redis в памяти для тестов.
 	github.com/alicebob/miniredis/v2 v2.35.0
 	github.com/gin-gonic/gin v1.12.0
+	// ЛР4: создание и проверка JWT.
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/minio/minio-go/v7 v7.0.95
+	// ЛР4: подключение к Redis.
 	github.com/redis/go-redis/v9 v9.14.1
 	github.com/spf13/viper v1.21.0
 	github.com/swaggo/files v1.0.1
+	// ЛР4: страница Swagger UI в Gin.
 	github.com/swaggo/gin-swagger v1.6.1
+	// ЛР4: генерация описания Swagger из комментариев.
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/crypto v0.48.0
 	gorm.io/driver/postgres v1.6.0

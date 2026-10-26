@@ -1,3 +1,5 @@
+// ЛР4. Этот файл выполняется командой go test; обычный сервер его не запускает.
+// Подмены хранилищ позволяют проверять логику без настоящих контейнеров Docker.
 package api
 
 import (
@@ -20,12 +22,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// Учебная подмена репозитория: в этом тесте данные хранятся в памяти.
 type usersRepo struct {
 	handler.Repository
 	users map[string]ds.User
 	draft *ds.CloudTariff
 }
 
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *usersRepo) Register(u *ds.User) error {
 	if _, ok := r.users[u.Login]; ok {
 		return repository.ErrLoginExists
@@ -34,12 +38,16 @@ func (r *usersRepo) Register(u *ds.User) error {
 	r.users[u.Login] = *u
 	return nil
 }
+
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *usersRepo) GetUserByLogin(login string) (ds.User, error) {
 	if u, ok := r.users[login]; ok {
 		return u, nil
 	}
 	return ds.User{}, gorm.ErrRecordNotFound
 }
+
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *usersRepo) GetUser(id uint) (ds.User, error) {
 	for _, u := range r.users {
 		if u.UserID == id {
@@ -48,21 +56,29 @@ func (r *usersRepo) GetUser(id uint) (ds.User, error) {
 	}
 	return ds.User{}, gorm.ErrRecordNotFound
 }
+
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *usersRepo) GetPublishedTariffs(_ *int, viewer uint) ([]ds.CloudTariff, error) {
 	return []ds.CloudTariff{{TariffID: 3, CreatorID: 2, Creator: r.users["second"]}}, nil
 }
+
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *usersRepo) CreateWithFiles(_ context.Context, t *ds.CloudTariff, _, _ *repository.Upload) error {
 	t.TariffID = 5
 	v := *t
 	r.draft = &v
 	return nil
 }
+
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *usersRepo) GetDraftTariff(user uint) (*ds.CloudTariff, error) {
 	if r.draft == nil || r.draft.CreatorID != user {
 		return nil, nil
 	}
 	return r.draft, nil
 }
+
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func httpCall(r *gin.Engine, method, path, body, token string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(method, path, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -73,6 +89,8 @@ func httpCall(r *gin.Engine, method, path, body, token string) *httptest.Respons
 	r.ServeHTTP(w, req)
 	return w
 }
+
+// Проверяем полный путь регистрации, bcrypt, входа, авторства, публикации и выхода через HTTP. Также сверяем ровно 10 маршрутов со Swagger.
 func TestRegisteredUserJWTAndRouteAccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	m := miniredis.RunT(t)
@@ -151,20 +169,27 @@ func TestRegisteredUserJWTAndRouteAccess(t *testing.T) {
 			t.Fatalf("unprotected %s %s: %d", tc.method, tc.path, w.Code)
 		}
 	}
-	for _, tc := range []struct {
-		token string
-		owner float64
-	}{{"", 0}, {token, 1}, {"invalid", 0}} {
-		w := httpCall(r, "GET", "/api/tariffs", "", tc.token)
-		var response struct {
-			Data []map[string]any `json:"data"`
-		}
-		json.Unmarshal(w.Body.Bytes(), &response)
-		if w.Code != 200 || len(response.Data) != 1 || response.Data[0]["is_owner"] != tc.owner {
-			t.Fatalf("owner response %s", w.Body.String())
-		}
-		if _, exists := response.Data[0]["creator"].(map[string]any)["is_moderator"]; exists {
-			t.Fatal("creator DTO changed")
+	for _, listPath := range []string{"/api/tariffs", "/api/tariffs?priceLimit=1000"} {
+		for _, tc := range []struct {
+			token string
+			owner float64
+		}{{"", 0}, {token, 1}, {"invalid", 0}} {
+			w := httpCall(r, "GET", listPath, "", tc.token)
+			var response struct {
+				Data []map[string]any `json:"data"`
+			}
+			json.Unmarshal(w.Body.Bytes(), &response)
+			if w.Code != 200 || len(response.Data) != 1 || response.Data[0]["is_owner"] != tc.owner {
+				t.Fatalf("owner response %s", w.Body.String())
+			}
+			if response.Data[0]["user_id"] != float64(2) {
+				t.Fatalf("wrong author ID: %s", w.Body.String())
+			}
+			for _, key := range []string{"creator", "creator_id", "login", "password_hash", "is_moderator"} {
+				if _, exists := response.Data[0][key]; exists {
+					t.Fatalf("unexpected author field %s: %s", key, w.Body.String())
+				}
+			}
 		}
 	}
 	// A real HTTP multipart create must use the authenticated user, even when it is not ID 1.
@@ -245,6 +270,7 @@ func TestRegisteredUserJWTAndRouteAccess(t *testing.T) {
 
 }
 
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *usersRepo) PublishDraftTariff(in repository.PublishTariffInput) error {
 	if r.draft == nil || r.draft.TariffID != in.TariffID {
 		return repository.ErrTariffNotFound
@@ -259,6 +285,8 @@ func (r *usersRepo) PublishDraftTariff(in repository.PublishTariffInput) error {
 	r.draft.TariffStatus = ds.StatusPublished
 	return nil
 }
+
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *usersRepo) GetPublishedTariff(id, viewer uint) (*ds.CloudTariff, error) {
 	if r.draft == nil || r.draft.TariffID != id || r.draft.TariffStatus != ds.StatusPublished {
 		return nil, repository.ErrTariffNotFound

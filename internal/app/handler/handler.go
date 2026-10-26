@@ -7,6 +7,8 @@ import (
 	"context"
 )
 
+// Обработчики знают этот набор операций, а не детали PostgreSQL и MinIO.
+// В ЛР4 добавлены поиск пользователя по логину и получение прямых ссылок на медиа.
 type Repository interface {
 	MediaURL(context.Context, string) (string, error)
 	GetPublishedTariffs(*int, uint) ([]ds.CloudTariff, error)
@@ -23,11 +25,13 @@ type Repository interface {
 	GetUserByLogin(string) (ds.User, error)
 }
 
+// Handler хранит помощников для данных и JWT. Через них HTTP-методы выполняют свою работу.
 type Handler struct {
 	Repository Repository
 	Auth       *auth.Service
 }
 
+// Создаём набор обработчиков с заданным репозиторием. JWT-сервис подключается при старте сервера.
 func NewHandler(r Repository) *Handler {
 	return &Handler{Repository: r}
 }

@@ -1,3 +1,5 @@
+// ЛР4. Этот файл выполняется командой go test; обычный сервер его не запускает.
+// Подмены хранилищ позволяют проверять логику без настоящих контейнеров Docker.
 package handler
 
 import (
@@ -7,12 +9,14 @@ import (
 	"testing"
 )
 
+// Учебная подмена репозитория: в этом тесте данные хранятся в памяти.
 type mediaRepository struct {
 	Repository
 	missing bool
 	calls   int
 }
 
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *mediaRepository) MediaURL(_ context.Context, name string) (string, error) {
 	r.calls++
 	if r.missing {
@@ -20,6 +24,8 @@ func (r *mediaRepository) MediaURL(_ context.Context, name string) (string, erro
 	}
 	return "http://minio.example/test-bucket/" + name + "?X-Amz-Signature=test", nil
 }
+
+// Проверяем временные ссылки MinIO и локальные заглушки при отсутствии файла.
 func TestMediaLinksAndFallbacks(t *testing.T) {
 	for _, tc := range []struct {
 		name         string

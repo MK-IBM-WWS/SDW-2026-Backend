@@ -1,3 +1,5 @@
+// ЛР4. Этот файл выполняется командой go test; обычный сервер его не запускает.
+// Подмены хранилищ позволяют проверять логику без настоящих контейнеров Docker.
 package repository
 
 import (
@@ -11,6 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func testRepo(t *testing.T) *Repository {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
@@ -33,6 +36,8 @@ func testRepo(t *testing.T) *Repository {
 	t.Cleanup(func() { sqlDB.Close() })
 	return &Repository{db: db}
 }
+
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func add(t *testing.T, r *Repository, owner uint, status ds.TariffStatus, price int) ds.CloudTariff {
 	t.Helper()
 	v := ds.CloudTariff{TariffName: "Test", CreatorID: owner, TariffStatus: status, PricePerMonth: price, RAMGB: 4}
@@ -41,6 +46,8 @@ func add(t *testing.T, r *Repository, owner uint, status ds.TariffStatus, price 
 	}
 	return v
 }
+
+// Проверяем создание, публикацию, лайки и soft delete, включая запрет чужих изменений.
 func TestLifecycleAndVisibility(t *testing.T) {
 	r := testRepo(t)
 	ctx := context.Background()
@@ -101,6 +108,8 @@ func TestLifecycleAndVisibility(t *testing.T) {
 		t.Fatal("deleted tariff visible")
 	}
 }
+
+// Проверяем отдельные черновики пользователей и запрет второго черновика у одного владельца.
 func TestDraftIsolationAndUniqueIndex(t *testing.T) {
 	r := testRepo(t)
 	a := add(t, r, 1, ds.StatusDraft, 0)
@@ -125,6 +134,8 @@ func TestDraftIsolationAndUniqueIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// Проверяем переход от последней опубликованной карточки к первой.
 func TestFeedWrap(t *testing.T) {
 	r := testRepo(t)
 	a := add(t, r, 1, ds.StatusPublished, 100)
@@ -136,6 +147,7 @@ func TestFeedWrap(t *testing.T) {
 	}
 }
 
+// Проверяем, что is_owner/is_liked зависят от текущего пользователя, а like_count общий.
 func TestTwoUsersHaveSeparateLikesAndOwnership(t *testing.T) {
 	r := testRepo(t)
 	ctx := context.Background()

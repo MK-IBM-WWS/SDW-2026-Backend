@@ -1,3 +1,5 @@
+// ЛР4. Этот файл выполняется командой go test; обычный сервер его не запускает.
+// Подмены хранилищ позволяют проверять логику без настоящих контейнеров Docker.
 package handler
 
 import (
@@ -16,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func call(t *testing.T, method, path, body string, fn gin.HandlerFunc) *httptest.ResponseRecorder {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
@@ -27,6 +30,8 @@ func call(t *testing.T, method, path, body string, fn gin.HandlerFunc) *httptest
 	r.ServeHTTP(w, req)
 	return w
 }
+
+// Проверяем, что клиент не может задать автора, статус и другие служебные поля через JSON публикации.
 func TestProtectedFieldsRejected(t *testing.T) {
 	h := NewHandler(nil)
 	for _, field := range []string{"id", "tariff_id", "tariff_status", "creator_id", "moderator_id", "created_at", "formed_at", "completed_at", "image_url", "video_url"} {
@@ -39,6 +44,8 @@ func TestProtectedFieldsRejected(t *testing.T) {
 		})
 	}
 }
+
+// Проверяем отказ для плохих ID и значений лайка, отличных от 0/1.
 func TestInvalidIDsAndLikeBodies(t *testing.T) {
 	h := NewHandler(nil)
 	for _, id := range []string{"-1", "0", "abc", "99999999999999999999999999999"} {
@@ -58,6 +65,8 @@ func TestInvalidIDsAndLikeBodies(t *testing.T) {
 		t.Fatal("delete body accepted")
 	}
 }
+
+// Проверяем, что JSON тарифа не раскрывает пароль и содержит правильный признак владельца.
 func TestSerializationDoesNotExposePassword(t *testing.T) {
 	b, err := json.Marshal(NewHandler(&mediaRepository{}).serialize(context.Background(), ds.CloudTariff{TariffID: 7, CreatorID: 1, ImageURL: "image_test.jpg", VideoURL: "video_test.mp4", Creator: ds.User{UserID: 1, Login: "student", PasswordHash: "secret"}}, 1))
 	if err != nil {
@@ -74,6 +83,8 @@ func TestSerializationDoesNotExposePassword(t *testing.T) {
 		t.Fatalf("bad DTO: %s", b)
 	}
 }
+
+// Проверяем настоящие байты изображения и видео, даже если клиент указал странное имя файла.
 func TestUploadValidation(t *testing.T) {
 	for _, tt := range []struct {
 		name, path string
@@ -103,6 +114,8 @@ func TestUploadValidation(t *testing.T) {
 		})
 	}
 }
+
+// Проверяем, что URL, переданный текстом в поле image, не заменяет загрузку файла.
 func TestTextInsteadOfFileRejected(t *testing.T) {
 	var b bytes.Buffer
 	writer := multipart.NewWriter(&b)
@@ -120,6 +133,8 @@ func TestTextInsteadOfFileRejected(t *testing.T) {
 		t.Fatalf("text image accepted: %d", w.Code)
 	}
 }
+
+// Проверяем соответствие ошибок репозитория кодам HTTP.
 func TestErrorStatuses(t *testing.T) {
 	for _, tt := range []struct {
 		err  error
@@ -133,6 +148,7 @@ func TestErrorStatuses(t *testing.T) {
 }
 
 // Feed requests select either one visible card or the next card in the feed.
+// Учебная подмена репозитория: в этом тесте данные хранятся в памяти.
 type feedRepository struct {
 	Repository
 	selectedID uint
@@ -140,14 +156,19 @@ type feedRepository struct {
 	err        error
 }
 
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *feedRepository) GetPublishedTariff(id, viewer uint) (*ds.CloudTariff, error) {
 	r.selectedID, r.operation = id, "exact"
 	return &ds.CloudTariff{TariffID: id, TariffStatus: ds.StatusPublished}, r.err
 }
+
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *feedRepository) GetNextPublishedTariff(id, viewer uint) (*ds.CloudTariff, error) {
 	r.selectedID, r.operation = id, "next"
 	return &ds.CloudTariff{TariffID: id + 1, TariffStatus: ds.StatusPublished}, r.err
 }
+
+// Проверяем режимы ленты и допустимость комбинаций id, next и after_id.
 func TestFeedQueryModes(t *testing.T) {
 	for _, tc := range []struct {
 		query     string
@@ -190,6 +211,8 @@ func TestFeedQueryModes(t *testing.T) {
 		})
 	}
 }
+
+// Отличаем отсутствие конкретной карточки (404) от пустой ленты (200 с data:null).
 func TestFeedMissingCardAndEmptyFeed(t *testing.T) {
 	for _, tc := range []struct {
 		query string

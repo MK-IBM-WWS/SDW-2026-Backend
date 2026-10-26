@@ -12,6 +12,7 @@ import (
 	"cloud-tariffs-backend/internal/app/dsn"
 )
 
+// Подготавливаем PostgreSQL: создаём нужные таблицы и ограничения, затем учебные данные для входа.
 func main() {
 	databaseDSN, err := dsn.FromEnv()
 	if err != nil {
@@ -25,10 +26,12 @@ func main() {
 		log.Fatalf("не удалось подключиться к БД: %v", err)
 	}
 
+	// GORM сверяет модели и структуру БД. Миграция не предназначена для удаления всех существующих данных.
 	if err := db.AutoMigrate(&ds.User{}, &ds.CloudTariff{}, &ds.UserTariffLike{}); err != nil {
 		log.Fatalf("не удалось выполнить миграцию: %v", err)
 	}
 
+	// Внешние ключи связывают тарифы и лайки с настоящими пользователями и тарифами.
 	if err := db.Exec(`
 		DO $$
 		BEGIN
@@ -63,6 +66,7 @@ func main() {
 		log.Fatalf("не удалось создать внешние ключи: %v", err)
 	}
 
+	// Индекс действует только для статуса черновик: у одного владельца может быть максимум один такой тариф.
 	if err := db.Exec(`
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_cloud_tariffs_one_draft_per_creator
 		ON cloud_tariffs (creator_id)
@@ -71,15 +75,19 @@ func main() {
 		log.Fatalf("не удалось создать индекс одного черновика: %v", err)
 	}
 
+	// ЛР4. Создаём bcrypt-хеш учебного пароля student123, чтобы учебный аккаунт мог реально войти.
 	hash, err := bcrypt.GenerateFromPassword([]byte("student123"), bcrypt.DefaultCost)
 	if err != nil {
 		log.Fatal(err)
 	}
 	user := ds.User{UserID: 1, Login: "student", PasswordHash: string(hash)}
+	// Если пользователь с ID=1 уже есть, DoNothing сохраняет его данные, включая настоящий пароль.
 	if err := db.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}}, DoNothing: true}).Create(&user).Error; err != nil {
 		log.Fatal(err)
 	}
 	// Repair only the known lab-2 seed placeholder, preserving real account passwords.
+	// Исправляем только известный текст-заглушку старой лабораторной.
+	// Настоящие пароли существующих аккаунтов это условие не затрагивает.
 	for login, password := range map[string]string{"student": "student123", "moderator": "moderator123", "guest": "guest123"} {
 		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
@@ -90,11 +98,13 @@ func main() {
 		}
 	}
 	// Convert the old lab's full MinIO URLs into object names without touching files.
+	// Переход от старых полных адресов MinIO к хранению имён объектов. Сами файлы не перемещаем.
 	if err := db.Exec(`UPDATE cloud_tariffs SET
         image_url = CASE WHEN image_url ~ '^https?://' THEN regexp_replace(image_url, '^.*/', '') ELSE image_url END,
         video_url = CASE WHEN video_url ~ '^https?://' THEN regexp_replace(video_url, '^.*/', '') ELSE video_url END`).Error; err != nil {
 		log.Fatal(err)
 	}
+	// Согласуем следующий автоматически выдаваемый ID пользователя с уже существующими строками.
 	if err := db.Exec(`SELECT setval(pg_get_serial_sequence('users','user_id'), GREATEST((SELECT COALESCE(MAX(user_id),1) FROM users), (SELECT last_value FROM users_user_id_seq)), true)`).Error; err != nil {
 		log.Fatal(err)
 	}

@@ -1,3 +1,5 @@
+// ЛР4. Этот файл выполняется командой go test; обычный сервер его не запускает.
+// Подмены хранилищ позволяют проверять логику без настоящих контейнеров Docker.
 package repository
 
 import (
@@ -19,6 +21,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Проверяем уборку файлов, если второй файл не загрузился или запись в БД не сохранилась.
 func TestUploadsCompensatedOnFailure(t *testing.T) {
 	for _, failure := range []string{"second_upload", "database"} {
 		t.Run(failure, func(t *testing.T) {
@@ -89,6 +92,7 @@ func TestUploadsCompensatedOnFailure(t *testing.T) {
 	}
 }
 
+// Проверяем, что подписанная ссылка выдаётся для существующего файла и действует 900 секунд.
 func TestMediaURLSignsExistingObjectsOnly(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.Method != "HEAD" {

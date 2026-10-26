@@ -1,3 +1,5 @@
+// ЛР4. Этот файл выполняется командой go test; обычный сервер его не запускает.
+// Подмены хранилищ позволяют проверять логику без настоящих контейнеров Docker.
 package auth
 
 import (
@@ -17,6 +19,7 @@ import (
 
 const secret = "0123456789abcdef0123456789abcdef0123456789abcdef"
 
+// Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func testService(t *testing.T) (*Service, *miniredis.Miniredis) {
 	t.Helper()
 	m := miniredis.RunT(t)
@@ -28,6 +31,8 @@ func testService(t *testing.T) (*Service, *miniredis.Miniredis) {
 	}
 	return s, m
 }
+
+// Проверяем, что после выхода JWT отклоняется, ключ хранится до exp, а новый JWT-сервис не отменяет отзыв.
 func TestJWTRevocationTTLAndRestart(t *testing.T) {
 	s, m := testService(t)
 	ctx := context.Background()
@@ -62,6 +67,8 @@ func TestJWTRevocationTTLAndRestart(t *testing.T) {
 		t.Fatal("expired blacklist entry did not disappear")
 	}
 }
+
+// Проверяем отказ для неправильных сведений JWT, срока, издателя и алгоритма подписи.
 func TestJWTRejectsInvalidClaimsAndAlgorithms(t *testing.T) {
 	s, _ := testService(t)
 	ctx := context.Background()
@@ -85,6 +92,8 @@ func TestJWTRejectsInvalidClaimsAndAlgorithms(t *testing.T) {
 		})
 	}
 }
+
+// Проверяем заголовок Bearer, требование входа и запрет для недопущенной роли.
 func TestMiddlewareRolesAndBearerBoundary(t *testing.T) {
 	s, m := testService(t)
 	gin.SetMode(gin.TestMode)
@@ -123,6 +132,7 @@ func TestMiddlewareRolesAndBearerBoundary(t *testing.T) {
 	}
 }
 
+// Проверяем, что публичное чтение работает и с плохими JWT, а защищённые запросы отклоняются.
 func TestPublicReadIgnoresInvalidExpiredAndRevokedTokens(t *testing.T) {
 	s, m := testService(t)
 	gin.SetMode(gin.TestMode)

@@ -766,6 +766,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "is_moderator": {
+                    "description": "Этим флагом управляет сервер или администратор БД; регистрация всегда ставит false.",
                     "type": "boolean"
                 },
                 "login": {
@@ -864,12 +865,65 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handler.TariffResponse"
+                        "$ref": "#/definitions/handler.ListTariffResponse"
                     }
                 },
                 "status": {
                     "type": "string",
                     "example": "success"
+                }
+            }
+        },
+        "handler.ListTariffResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "formed_at": {
+                    "type": "string"
+                },
+                "image_name": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "is_liked": {
+                    "type": "integer"
+                },
+                "is_owner": {
+                    "type": "integer"
+                },
+                "like_count": {
+                    "type": "integer"
+                },
+                "price_per_month": {
+                    "type": "integer"
+                },
+                "ram_gb": {
+                    "type": "integer"
+                },
+                "short_description": {
+                    "type": "string"
+                },
+                "tariff_id": {
+                    "type": "integer"
+                },
+                "tariff_name": {
+                    "type": "string"
+                },
+                "tariff_status": {
+                    "$ref": "#/definitions/ds.TariffStatus"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "video_name": {
+                    "type": "string"
+                },
+                "video_url": {
+                    "type": "string"
                 }
             }
         },
@@ -915,12 +969,14 @@ const docTemplate = `{
                     "$ref": "#/definitions/handler.CreatorResponse"
                 },
                 "creator_id": {
+                    "description": "ID автора, который сервер автоматически назначает из проверенного JWT при создании.",
                     "type": "integer"
                 },
                 "formed_at": {
                     "type": "string"
                 },
                 "image_name": {
+                    "description": "Несмотря на старое Go-имя ImageURL, здесь хранится имя объекта MinIO.\nВ JSON оно называется image_name; действительная ссылка формируется отдельно в TariffResponse.",
                     "type": "string"
                 },
                 "image_url": {
@@ -930,6 +986,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "is_owner": {
+                    "description": "gorm:\"-\" означает, что поле не хранится в таблице. 1 — читатель является автором; 0 — нет.",
                     "type": "integer"
                 },
                 "like_count": {

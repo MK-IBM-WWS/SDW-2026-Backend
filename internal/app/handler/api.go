@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"cloud-tariffs-backend/internal/app/currentuser"
@@ -20,9 +21,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// Общий формат ошибки: status=fail и понятное сообщение. Abort останавливает обработку.
 func Fail(c *gin.Context, code int, msg string) {
 	c.AbortWithStatusJSON(code, gin.H{"status": "fail", "message": msg})
 }
+
+// Переводим ошибки работы с данными в HTTP-коды: 400, 404, 403, 409 или 500.
+// Подробности внутреннего сбоя записываем в журнал, а не раскрываем в ответе клиенту.
 func apiError(c *gin.Context, err error) {
 	var input *repository.InputError
 	switch {
@@ -39,9 +44,13 @@ func apiError(c *gin.Context, err error) {
 		Fail(c, 500, "Внутренняя ошибка сервера")
 	}
 }
+
+// Общий формат успешного ответа: status=success, а результат находится в data.
 func success(c *gin.Context, code int, data any) {
 	c.JSON(code, gin.H{"status": "success", "data": data})
 }
+
+// Проверяем ID в пути URL: он должен быть положительным целым числом.
 func parseID(c *gin.Context) (uint, bool) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 63)
 	if err != nil || id == 0 {
@@ -50,6 +59,8 @@ func parseID(c *gin.Context) (uint, bool) {
 	}
 	return uint(id), true
 }
+
+// Читаем JSON строго: проверяем тип тела, размер и отсутствие лишних полей.
 func strictJSON(c *gin.Context, dst any) bool {
 	if c.ContentType() != "application/json" {
 		Fail(c, 415, "Требуется Content-Type: application/json")
@@ -57,6 +68,7 @@ func strictJSON(c *gin.Context, dst any) bool {
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<10)
 	d := json.NewDecoder(c.Request.Body)
+	// Например, клиент не может добавить role или creator_id в структуру, где они не разрешены.
 	d.DisallowUnknownFields()
 	if err := d.Decode(dst); err != nil {
 		Fail(c, 400, "Некорректный JSON или недопустимое поле: "+err.Error())
@@ -68,6 +80,8 @@ func strictJSON(c *gin.Context, dst any) bool {
 	}
 	return true
 }
+
+// Проверяем отсутствие параметров после ? у методов, которым они не нужны.
 func noQuery(c *gin.Context) bool {
 	if c.Request.URL.RawQuery != "" {
 		Fail(c, 400, "Этот метод не принимает query-параметры")
@@ -75,6 +89,8 @@ func noQuery(c *gin.Context) bool {
 	}
 	return true
 }
+
+// Проверяем отсутствие тела, например у выхода или удаления.
 func noBody(c *gin.Context) bool {
 	if c.Request.Body != nil {
 		b, err := io.ReadAll(io.LimitReader(c.Request.Body, 1))
@@ -86,11 +102,14 @@ func noBody(c *gin.Context) bool {
 	return true
 }
 
+// В карточке показываем только ID и логин автора. Пароль и флаг модератора сюда не попадают.
 type CreatorResponse struct {
 	UserID uint   `json:"user_id"`
 	Login  string `json:"login"`
 }
 
+// Это DTO: структура для ответа клиенту, а не новая таблица.
+// К данным тарифа добавляем ссылки на медиа и безопасные сведения автора.
 type TariffResponse struct {
 	ds.CloudTariff
 	ImageURL string          `json:"image_url"`
@@ -98,6 +117,43 @@ type TariffResponse struct {
 	Creator  CreatorResponse `json:"creator"`
 }
 
+// ListTariffResponse — карточка публичного списка. Автор представлен только user_id.
+// DTO задаёт состав ответа отдельно от модели БД: creator_id, creator и login сюда не входят.
+type ListTariffResponse struct {
+	TariffID         uint            `json:"tariff_id"`
+	TariffName       string          `json:"tariff_name"`
+	ShortDescription string          `json:"short_description"`
+	TariffStatus     ds.TariffStatus `json:"tariff_status"`
+	ImageName        string          `json:"image_name"`
+	VideoName        string          `json:"video_name"`
+	PricePerMonth    int             `json:"price_per_month"`
+	RAMGB            int             `json:"ram_gb"`
+	CreatedAt        time.Time       `json:"created_at"`
+	UserID           uint            `json:"user_id"`
+	FormedAt         *time.Time      `json:"formed_at"`
+	LikeCount        int64           `json:"like_count"`
+	IsOwner          int             `json:"is_owner"`
+	IsLiked          int             `json:"is_liked"`
+	ImageURL         string          `json:"image_url"`
+	VideoURL         string          `json:"video_url"`
+}
+
+// Для списка используем тот же расчёт признаков и ссылок, но отдаём только ID автора.
+func (h *Handler) serializeList(ctx context.Context, t ds.CloudTariff, viewer uint) ListTariffResponse {
+	dto := h.serialize(ctx, t, viewer)
+	return ListTariffResponse{
+		TariffID: dto.TariffID, TariffName: dto.TariffName,
+		ShortDescription: dto.ShortDescription, TariffStatus: dto.TariffStatus,
+		ImageName: t.ImageURL, VideoName: t.VideoURL,
+		PricePerMonth: dto.PricePerMonth, RAMGB: dto.RAMGB,
+		CreatedAt: dto.CreatedAt, UserID: dto.CreatorID, FormedAt: dto.FormedAt,
+		LikeCount: dto.LikeCount, IsOwner: dto.IsOwner, IsLiked: dto.IsLiked,
+		ImageURL: dto.ImageURL, VideoURL: dto.VideoURL,
+	}
+}
+
+// Готовим тариф к отправке: вычисляем is_owner и получаем ссылки на изображение/видео.
+// viewer — ID читателя из JWT; для гостя он равен нулю.
 func (h *Handler) serialize(ctx context.Context, t ds.CloudTariff, viewer uint) TariffResponse {
 	t.IsOwner = 0
 	if viewer != 0 && t.CreatorID == viewer {
@@ -107,6 +163,9 @@ func (h *Handler) serialize(ctx context.Context, t ds.CloudTariff, viewer uint) 
 	return TariffResponse{CloudTariff: t, ImageURL: imageURL, VideoURL: videoURL, Creator: CreatorResponse{UserID: t.Creator.UserID, Login: t.Creator.Login}}
 }
 
+// Swagger-комментарии: @Summary — краткое описание; @Tags — группа на странице.
+// Метка @Param — входные данные; @Success/@Failure — ответы; @Router — путь и HTTP-метод.
+// Метка @Security на защищённых методах описывает Bearer JWT, но сама не проверяет его.
 // ListAPI godoc
 // @Summary Список опубликованных тарифов
 // @Tags Тарифы
@@ -140,14 +199,15 @@ func (h *Handler) ListAPI(c *gin.Context) {
 		Fail(c, 400, "priceLimit не может быть пустым")
 		return
 	}
+	// В ЛР4 передаём настоящий ID читателя, чтобы is_owner/is_liked считались для его аккаунта.
 	list, err := h.Repository.GetPublishedTariffs(max, currentuser.Get(c).ID())
 	if err != nil {
 		apiError(c, err)
 		return
 	}
-	result := make([]TariffResponse, 0, len(list))
+	result := make([]ListTariffResponse, 0, len(list))
 	for _, t := range list {
-		result = append(result, h.serialize(c.Request.Context(), t, currentuser.Get(c).ID()))
+		result = append(result, h.serializeList(c.Request.Context(), t, currentuser.Get(c).ID()))
 	}
 	success(c, 200, result)
 }
@@ -217,6 +277,8 @@ func (h *Handler) FeedAPI(c *gin.Context) {
 	}
 
 	var tariff *ds.CloudTariff
+	// В ленте id без next выбирает конкретную карточку; next=true выбирает следующую.
+	// Без id выбирается начало ленты. Во всех режимах выдаются только опубликованные тарифы.
 	exactCard := hasID && !next
 	if exactCard {
 		tariff, err = h.Repository.GetPublishedTariff(uint(id), currentuser.Get(c).ID())
@@ -252,6 +314,7 @@ func (h *Handler) DraftAPI(c *gin.Context) {
 	if !noQuery(c) {
 		return
 	}
+	// ID владельца берём из проверенного JWT, поэтому метод без ID вернёт только свой черновик.
 	t, err := h.Repository.GetDraftTariff(currentuser.Get(c).ID())
 	if err != nil {
 		apiError(c, err)
@@ -304,6 +367,8 @@ func (h *Handler) CreateAPI(c *gin.Context) {
 		}
 		return
 	}
+	// Проверяем форму: название — текст, image и video — настоящие загруженные файлы.
+	// Поля creator_id и tariff_status клиенту здесь задавать нельзя.
 	form := c.Request.MultipartForm
 	for k, v := range form.Value {
 		if k != "tariff_name" || len(v) != 1 {
@@ -334,7 +399,10 @@ func (h *Handler) CreateAPI(c *gin.Context) {
 		apiError(c, err)
 		return
 	}
+	// Автоматически назначаем автора из текущего запроса.
+	// Так нельзя подставить ID другого пользователя и создать тариф от его имени.
 	t := ds.CloudTariff{TariffName: name, TariffStatus: ds.StatusDraft, CreatorID: currentuser.Get(c).ID()}
+	// Загружаем логин автора для ответа. Благодаря json:"-" хеш пароля не будет отправлен.
 	t.Creator, err = h.Repository.GetUser(currentuser.Get(c).ID())
 	if err != nil {
 		apiError(c, err)
@@ -389,6 +457,8 @@ func (h *Handler) PublishAPI(c *gin.Context) {
 		Fail(c, 400, "Нужны название (1–100), описание (1–500), цена >= 0 и RAM > 0 (целые до 2147483647)")
 		return
 	}
+	// Передаём ID пользователя из JWT вместе с ID тарифа.
+	// Репозиторий сравнит владельца: одного факта входа для чужой публикации недостаточно.
 	err := h.Repository.PublishDraftTariff(repository.PublishTariffInput{TariffID: id, CreatorID: currentuser.Get(c).ID(), TariffName: body.Name, ShortDescription: body.Description, PricePerMonth: *body.Price, RAMGB: *body.RAM})
 	if err != nil {
 		apiError(c, err)
@@ -425,6 +495,7 @@ func (h *Handler) DeleteAPI(c *gin.Context) {
 	if !ok {
 		return
 	}
+	// Удаление тоже получает ID пользователя из JWT и допускается только для его тарифа.
 	if err := h.Repository.DeleteTariff(c.Request.Context(), id, currentuser.Get(c).ID()); err != nil {
 		apiError(c, err)
 		return
@@ -469,6 +540,7 @@ func (h *Handler) LikeAPI(c *gin.Context) {
 		Fail(c, 400, "value должен быть 0 или 1")
 		return
 	}
+	// Лайк относится к вошедшему пользователю. value=1 ставит лайк, value=0 снимает.
 	count, err := h.Repository.SetLike(c.Request.Context(), id, currentuser.Get(c).ID(), *body.Value)
 	if err != nil {
 		apiError(c, err)
@@ -477,6 +549,7 @@ func (h *Handler) LikeAPI(c *gin.Context) {
 	success(c, 200, gin.H{"tariff_id": id, "is_liked": *body.Value, "like_count": count})
 }
 
+// Регистрация создаёт новый аккаунт. После неё вход выполняется отдельным запросом.
 // RegisterAPI godoc
 // @Summary Зарегистрировать пользователя
 // @Tags Пользователи
@@ -508,15 +581,20 @@ func (h *Handler) RegisterAPI(c *gin.Context) {
 			return
 		}
 	}
+	// Вместо исходного пароля сохраняем bcrypt-хеш. Библиотека добавляет случайную соль.
+	// Даже одинаковые пароли обычно дают разные строки хеша. Хеширование нельзя считать шифрованием.
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
 	if err != nil {
 		apiError(c, err)
 		return
 	}
+	// is_moderator=false назначает сам сервер. Через регистрацию нельзя получить роль модератора.
 	u := ds.User{Login: body.Login, PasswordHash: string(hash), IsModerator: false}
+	// Сохраняем пользователя. При занятом логине клиент получит конфликт 409.
 	if err = h.Repository.Register(&u); err != nil {
 		apiError(c, err)
 		return
 	}
+	// Возвращаем созданного пользователя с кодом 201; json:"-" исключает хеш пароля из JSON.
 	success(c, 201, u)
 }

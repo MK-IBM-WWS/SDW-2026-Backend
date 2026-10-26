@@ -21,6 +21,8 @@ definitions:
   ds.User:
     properties:
       is_moderator:
+        description: Этим флагом управляет сервер или администратор БД; регистрация
+          всегда ставит false.
         type: boolean
       login:
         type: string
@@ -85,10 +87,45 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/handler.TariffResponse'
+          $ref: '#/definitions/handler.ListTariffResponse'
         type: array
       status:
         example: success
+        type: string
+    type: object
+  handler.ListTariffResponse:
+    properties:
+      created_at:
+        type: string
+      formed_at:
+        type: string
+      image_name:
+        type: string
+      image_url:
+        type: string
+      is_liked:
+        type: integer
+      is_owner:
+        type: integer
+      like_count:
+        type: integer
+      price_per_month:
+        type: integer
+      ram_gb:
+        type: integer
+      short_description:
+        type: string
+      tariff_id:
+        type: integer
+      tariff_name:
+        type: string
+      tariff_status:
+        $ref: '#/definitions/ds.TariffStatus'
+      user_id:
+        type: integer
+      video_name:
+        type: string
+      video_url:
         type: string
     type: object
   handler.LogoutData:
@@ -119,16 +156,23 @@ definitions:
       creator:
         $ref: '#/definitions/handler.CreatorResponse'
       creator_id:
+        description: ID автора, который сервер автоматически назначает из проверенного
+          JWT при создании.
         type: integer
       formed_at:
         type: string
       image_name:
+        description: |-
+          Несмотря на старое Go-имя ImageURL, здесь хранится имя объекта MinIO.
+          В JSON оно называется image_name; действительная ссылка формируется отдельно в TariffResponse.
         type: string
       image_url:
         type: string
       is_liked:
         type: integer
       is_owner:
+        description: gorm:"-" означает, что поле не хранится в таблице. 1 — читатель
+          является автором; 0 — нет.
         type: integer
       like_count:
         type: integer
