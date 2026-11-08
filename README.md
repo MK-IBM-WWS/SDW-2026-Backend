@@ -1,7 +1,6 @@
-# Индексы в БД — бэкенд
+# Индексы в БД
 
-Go + Gin + GORM, PostgreSQL, Redis, MinIO. Основа — приложенный бэкенд ЛР4.
-Фронтенд находится в отдельной папке `SDW-2026-Frontend`.
+Go + Gin + GORM, PostgreSQL, Redis, MinIO.
 
 ## Что добавлено
 
@@ -12,13 +11,9 @@ Go + Gin + GORM, PostgreSQL, Redis, MinIO. Основа — приложенны
 - `cmd/seed` создаёт учебный набор из **120000 опубликованных тарифов**. Повторный запуск не добавляет существующие `Lab-PAG-...` заново. Рабочие данные не удаляются, учебные тарифы принадлежат `student`. Цена случайная: 100..500000; RAM: 1..128 ГБ. У медиа пустые имена, поэтому используются прежние локальные заглушки. Приблизительно 0,18% набора проходит фильтр «до 1000 ₽».
 - Генератор написан на Go и использует PostgreSQL `generate_series`/`random` для пакетной вставки. Это выполняет задачу генерации из PAG.md без дополнительной библиотеки faker и 120000 отдельных INSERT.
 
-## Запуск на Fedora
+## Запуск
 
 Нужны Go 1.25+, Node.js 22.12+ или 24+, Docker Engine и Compose v2.
-Если Go/Node.js ещё нет: `sudo dnf install golang nodejs`.
-Проверьте `go version`, `node --version`, `npm --version`.
-Установка Docker для Fedora: https://docs.docker.com/engine/install/fedora/ .
-Если он уже установлен, переустанавливать его не нужно.
 
 Из этой папки:
 
@@ -87,37 +82,3 @@ React при загрузке любой страницы вызывает `GET 
 TTL набора и метаданных — 24 часа с продлением при чтении. После истечения создаётся новый набор с №1. После F5 авторизация, как в ЛР6, сбрасывается в Redux, а cookie гостевой ленты сохраняется. JWT blacklist хранится отдельно и не очищается при обновлении ленты.
 
 Состав ответа: `status`, `data` и `feed` (`session_id`, `redis_key`, `batch_id`, `batch_start`, `batch_size`, `position`). `position=0` означает отдельно открытую из плитки карточку вне сотни.
-
-Просмотр Redis без дополнительных инструментов на хосте:
-
-```bash
-sudo docker compose exec redis sh -c 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli --scan --pattern "feed:*:cards"'
-```
-
-Скопировать нужный ключ из вывода или поля `feed.redis_key` в Network и заменить `<КЛЮЧ>`:
-
-```bash
-sudo docker compose exec redis sh -c 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli LLEN "<КЛЮЧ>"'
-sudo docker compose exec redis sh -c 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli LRANGE "<КЛЮЧ>" 0 99'
-```
-
-## Разработка и проверка
-
-```bash
-go test ./...
-go vet ./...
-```
-
-Тесты: пагинация, валидация лимитов, фильтрация и стабильный порядок, ровно 100 уникальных карточек, изоляция пользователей/сессий, переход 100→101, повтор запроса, одновременная инициализация, TTL, исключение удалённых и актуальность лайков, прежние сценарии авторизации/медиа/публикации.
-
-После изменения Swagger-комментариев:
-
-```bash
-go install github.com/swaggo/swag/cmd/swag@v1.16.6
-"$(go env GOPATH)/bin/swag" init -g cmd/tariffs/main.go --output docs
-cp docs/swagger.json ../SDW-2026-Frontend/src/api/swagger.json
-```
-
-Затем во фронтенде `npm run generate-api`. Готовые описания Swagger и Axios-клиент уже включены в архивы, выполнять генерацию для запуска не нужно.
-
-Официальные справочные материалы: [составные индексы PostgreSQL](https://www.postgresql.org/docs/17/indexes-multicolumn.html), [EXPLAIN](https://www.postgresql.org/docs/17/sql-explain.html), [Redis LIST](https://redis.io/docs/latest/develop/data-types/lists/), [Node.js в Fedora](https://developer.fedoraproject.org/tech/languages/nodejs/nodejs.html).
