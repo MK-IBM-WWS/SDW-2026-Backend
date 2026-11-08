@@ -58,9 +58,10 @@ func (r *usersRepo) GetUser(id uint) (ds.User, error) {
 }
 
 // Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
-func (r *usersRepo) GetPublishedTariffs(_ *int, viewer uint) ([]ds.CloudTariff, error) {
-	return []ds.CloudTariff{{TariffID: 3, CreatorID: 2, Creator: r.users["second"]}}, nil
+func (r *usersRepo) GetPublishedTariffs(_ context.Context, _ *int, viewer uint, limit, offset int) ([]ds.CloudTariff, int64, float64, error) {
+	return []ds.CloudTariff{{TariffID: 3, CreatorID: 2, Creator: r.users["second"]}}, 1, 0.1, nil
 }
+func (r *usersRepo) PriceIndexEnabled(context.Context) (bool, error) { return true, nil }
 
 // Вспомогательная функция теста: готовит окружение, запрос или ответ подмены.
 func (r *usersRepo) CreateWithFiles(_ context.Context, t *ds.CloudTariff, _, _ *repository.Upload) error {

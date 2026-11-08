@@ -3,6 +3,7 @@ package api
 import (
 	"cloud-tariffs-backend/docs"
 	"cloud-tariffs-backend/internal/app/auth"
+	"cloud-tariffs-backend/internal/app/feed"
 	"context"
 	"fmt"
 	"github.com/redis/go-redis/v9"
@@ -72,6 +73,7 @@ func StartServer() error {
 	tariffHandler := handler.NewHandler(repo)
 	// Обработчики входа и выхода будут пользоваться этим же JWT-сервисом.
 	tariffHandler.Auth = authService
+	tariffHandler.Feed = &feed.Service{Client: redisClient, Source: repo}
 	router := NewRouter(tariffHandler, authService)
 
 	address := fmt.Sprintf("%s:%d", serviceConfig.ServiceHost, serviceConfig.ServicePort)
@@ -119,6 +121,7 @@ func NewRouter(h *handler.Handler, a *auth.Service) *gin.Engine {
 		for _, allowed := range strings.Split(os.Getenv("CORS_ORIGINS"), ",") {
 			if origin != "" && origin == strings.TrimSpace(allowed) {
 				c.Header("Access-Control-Allow-Origin", origin)
+				c.Header("Access-Control-Allow-Credentials", "true")
 				c.Header("Vary", "Origin")
 				c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 				c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")

@@ -26,44 +26,15 @@ func (r *Repository) tariffQuery(viewer uint) *gorm.DB {
         CASE WHEN EXISTS (SELECT 1 FROM user_tariff_likes l WHERE l.tariff_id=cloud_tariffs.tariff_id AND l.user_id=?) THEN 1 ELSE 0 END AS is_liked`, viewer)
 }
 
-// Выбираем только опубликованные тарифы, применяем фильтр цены и признак владельца для viewer.
-func (r *Repository) GetPublishedTariffs(maxPrice *int, viewer uint) ([]ds.CloudTariff, error) {
-	tariffs := make([]ds.CloudTariff, 0)
-	q := r.tariffQuery(viewer).Where("tariff_status = ?", ds.StatusPublished)
-	if maxPrice != nil {
-		q = q.Where("price_per_month <= ?", *maxPrice)
-	}
-	err := q.Order("tariff_id").Find(&tariffs).Error
-	for i := range tariffs {
-		if tariffs[i].CreatorID == viewer {
-			tariffs[i].IsOwner = 1
-		}
-	}
-	return tariffs, err
-}
-
 // Ищем одну опубликованную карточку. Внешнего GET по этому пути нет: метод нужен обработчику ленты и публикации.
 func (r *Repository) GetPublishedTariff(id, viewer uint) (*ds.CloudTariff, error) {
-	var t ds.CloudTariff
-	err := r.tariffQuery(viewer).Where("tariff_id = ? AND tariff_status = ?", id, ds.StatusPublished).First(&t).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		err = ErrTariffNotFound
-	}
-	return &t, err
+	return r.PublishedCard(context.Background(), id, viewer)
 }
 
-// Внутренний помощник: начало ленты — это следующая карточка после ID=0.
-func (r *Repository) GetFirstPublishedTariff(viewer uint) (*ds.CloudTariff, error) {
-	return r.GetNextPublishedTariff(0, viewer)
-}
-
-// Выбираем следующую опубликованную карточку по ID; после последней возвращаемся к первой.
-func (r *Repository) GetNextPublishedTariff(after, viewer uint) (*ds.CloudTariff, error) {
+// PublishedCard проверяет актуальный статус и лайки с таймаутом запроса ленты.
+func (r *Repository) PublishedCard(ctx context.Context, id, viewer uint) (*ds.CloudTariff, error) {
 	var t ds.CloudTariff
-	err := r.tariffQuery(viewer).Where("tariff_status = ? AND tariff_id > ?", ds.StatusPublished, after).Order("tariff_id").First(&t).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) && after > 0 {
-		return r.GetNextPublishedTariff(0, viewer)
-	}
+	err := r.tariffQuery(viewer).WithContext(ctx).Where("tariff_id = ? AND tariff_status = ?", id, ds.StatusPublished).First(&t).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = ErrTariffNotFound
 	}

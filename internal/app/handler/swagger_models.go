@@ -1,6 +1,9 @@
 package handler
 
-import "cloud-tariffs-backend/internal/app/ds"
+import (
+	"cloud-tariffs-backend/internal/app/ds"
+	"cloud-tariffs-backend/internal/app/feed"
+)
 
 // Response DTOs document the status/data envelope used by the API.
 // Ошибка: status=fail и сообщение, почему запрос не выполнен.
@@ -17,8 +20,13 @@ type TariffEnvelope struct {
 
 // Успешный ответ со списком тарифов в data.
 type ListEnvelope struct {
-	Status string               `json:"status" example:"success"`
-	Data   []ListTariffResponse `json:"data"`
+	Status       string               `json:"status" example:"success"`
+	Data         []ListTariffResponse `json:"data"`
+	Total        int64                `json:"total"`
+	Page         int                  `json:"page"`
+	Limit        int                  `json:"limit"`
+	QueryMS      float64              `json:"query_ms"`
+	IndexEnabled bool                 `json:"index_enabled"`
 }
 
 // Ответ регистрации с пользователем; модель User не сериализует хеш пароля.
@@ -66,4 +74,11 @@ type LogoutData struct {
 type LogoutEnvelope struct {
 	Status string     `json:"status" example:"success"`
 	Data   LogoutData `json:"data"`
+}
+
+// FeedEnvelope содержит карточку и положение в Redis-сессии.
+type FeedEnvelope struct {
+	Status string          `json:"status"`
+	Data   *TariffResponse `json:"data"`
+	Feed   feed.Meta       `json:"feed"`
 }

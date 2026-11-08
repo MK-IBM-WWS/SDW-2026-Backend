@@ -3,6 +3,7 @@ package handler
 import (
 	"cloud-tariffs-backend/internal/app/auth"
 	"cloud-tariffs-backend/internal/app/ds"
+	"cloud-tariffs-backend/internal/app/feed"
 	"cloud-tariffs-backend/internal/app/repository"
 	"context"
 )
@@ -11,10 +12,9 @@ import (
 // В ЛР4 добавлены поиск пользователя по логину и получение прямых ссылок на медиа.
 type Repository interface {
 	MediaURL(context.Context, string) (string, error)
-	GetPublishedTariffs(*int, uint) ([]ds.CloudTariff, error)
+	GetPublishedTariffs(context.Context, *int, uint, int, int) ([]ds.CloudTariff, int64, float64, error)
+	PriceIndexEnabled(context.Context) (bool, error)
 	GetPublishedTariff(uint, uint) (*ds.CloudTariff, error)
-	GetFirstPublishedTariff(uint) (*ds.CloudTariff, error)
-	GetNextPublishedTariff(uint, uint) (*ds.CloudTariff, error)
 	GetDraftTariff(uint) (*ds.CloudTariff, error)
 	CreateWithFiles(context.Context, *ds.CloudTariff, *repository.Upload, *repository.Upload) error
 	PublishDraftTariff(repository.PublishTariffInput) error
@@ -29,6 +29,7 @@ type Repository interface {
 type Handler struct {
 	Repository Repository
 	Auth       *auth.Service
+	Feed       *feed.Service
 }
 
 // Создаём набор обработчиков с заданным репозиторием. JWT-сервис подключается при старте сервера.

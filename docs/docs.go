@@ -17,26 +17,43 @@ const docTemplate = `{
     "paths": {
         "/tariffs": {
             "get": {
-                "description": "Чтение доступно независимо от JWT. Валидный Authorization добавляет персональные is_owner/is_liked; неверный, истёкший или отозванный JWT трактуется как гостевой запрос.",
+                "description": "Сортировка price_per_month, tariff_id; query_ms — время COUNT и SELECT, без HTTP/MinIO. Максимум 100 карточек за запрос.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Тарифы"
                 ],
-                "summary": "Список опубликованных тарифов",
+                "summary": "Страница опубликованных тарифов с фильтром цены",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer \u003cJWT\u003e, необязательно",
+                        "description": "Bearer JWT",
                         "name": "Authorization",
                         "in": "header"
                     },
                     {
                         "minimum": 0,
                         "type": "integer",
-                        "description": "Максимальная цена в рублях, целое \u003e= 0",
+                        "description": "Максимальная цена",
                         "name": "priceLimit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Страница",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Размер страницы",
+                        "name": "limit",
                         "in": "query"
                     }
                 ],
@@ -49,18 +66,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handler.ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/handler.ErrorEnvelope"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorEnvelope"
                         }
@@ -230,37 +235,45 @@ const docTemplate = `{
         },
         "/tariffs/feed": {
             "get": {
-                "description": "Чтение доступно независимо от JWT. Валидный Authorization добавляет персональные is_owner/is_liked; неверный, истёкший или отозванный JWT трактуется как гостевой запрос.",
+                "description": "При первом обращении создаёт 100 уникальных карточек. Сессия feed_session — HttpOnly cookie без авторизации, TTL Redis 24 часа. position — сквозной номер. init не продвигает ленту.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Тарифы"
                 ],
-                "summary": "Карточка ленты",
+                "summary": "Карточка случайной ленты из Redis",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer \u003cJWT\u003e, необязательно",
+                        "description": "Bearer JWT",
                         "name": "Authorization",
                         "in": "header"
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "ID опубликованной карточки",
+                        "description": "Порядковый номер в текущем наборе или сразу после него",
+                        "name": "position",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Сформировать/восстановить ленту при старте приложения",
+                        "name": "init",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Открыть карточку из плитки",
                         "name": "id",
                         "in": "query"
                     },
                     {
                         "type": "boolean",
-                        "description": "Следующая карточка; требует id",
+                        "description": "Следующая в Redis-порядке после id",
                         "name": "next",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Следующая после ID; отдельно от id и next",
-                        "name": "after_id",
                         "in": "query"
                     }
                 ],
@@ -268,7 +281,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.TariffEnvelope"
+                            "$ref": "#/definitions/handler.FeedEnvelope"
                         }
                     },
                     "400": {
@@ -283,14 +296,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/handler.ErrorEnvelope"
                         }
                     },
-                    "409": {
-                        "description": "Conflict",
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorEnvelope"
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorEnvelope"
                         }
@@ -808,6 +821,29 @@ const docTemplate = `{
                 }
             }
         },
+        "feed.Meta": {
+            "type": "object",
+            "properties": {
+                "batch_id": {
+                    "type": "string"
+                },
+                "batch_size": {
+                    "type": "integer"
+                },
+                "batch_start": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "integer"
+                },
+                "redis_key": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.CreatorResponse": {
             "type": "object",
             "properties": {
@@ -864,6 +900,20 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.FeedEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/handler.TariffResponse"
+                },
+                "feed": {
+                    "$ref": "#/definitions/feed.Meta"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.LikeData": {
             "type": "object",
             "properties": {
@@ -899,9 +949,24 @@ const docTemplate = `{
                         "$ref": "#/definitions/handler.ListTariffResponse"
                     }
                 },
+                "index_enabled": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "query_ms": {
+                    "type": "number"
+                },
                 "status": {
                     "type": "string",
                     "example": "success"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

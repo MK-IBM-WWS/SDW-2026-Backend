@@ -29,6 +29,21 @@ definitions:
       user_id:
         type: integer
     type: object
+  feed.Meta:
+    properties:
+      batch_id:
+        type: string
+      batch_size:
+        type: integer
+      batch_start:
+        type: integer
+      position:
+        type: integer
+      redis_key:
+        type: string
+      session_id:
+        type: string
+    type: object
   handler.CreatorResponse:
     properties:
       login:
@@ -66,6 +81,15 @@ definitions:
         example: fail
         type: string
     type: object
+  handler.FeedEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/handler.TariffResponse'
+      feed:
+        $ref: '#/definitions/feed.Meta'
+      status:
+        type: string
+    type: object
   handler.LikeData:
     properties:
       is_liked:
@@ -89,9 +113,19 @@ definitions:
         items:
           $ref: '#/definitions/handler.ListTariffResponse'
         type: array
+      index_enabled:
+        type: boolean
+      limit:
+        type: integer
+      page:
+        type: integer
+      query_ms:
+        type: number
       status:
         example: success
         type: string
+      total:
+        type: integer
     type: object
   handler.ListTariffResponse:
     properties:
@@ -242,18 +276,30 @@ info:
 paths:
   /tariffs:
     get:
-      description: Чтение доступно независимо от JWT. Валидный Authorization добавляет
-        персональные is_owner/is_liked; неверный, истёкший или отозванный JWT трактуется
-        как гостевой запрос.
+      description: Сортировка price_per_month, tariff_id; query_ms — время COUNT и
+        SELECT, без HTTP/MinIO. Максимум 100 карточек за запрос.
       parameters:
-      - description: Bearer <JWT>, необязательно
+      - description: Bearer JWT
         in: header
         name: Authorization
         type: string
-      - description: Максимальная цена в рублях, целое >= 0
+      - description: Максимальная цена
         in: query
         minimum: 0
         name: priceLimit
+        type: integer
+      - default: 1
+        description: Страница
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: Размер страницы
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
         type: integer
       produces:
       - application/json
@@ -266,19 +312,11 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/handler.ErrorEnvelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/handler.ErrorEnvelope'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/handler.ErrorEnvelope'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handler.ErrorEnvelope'
-      summary: Список опубликованных тарифов
+      summary: Страница опубликованных тарифов с фильтром цены
       tags:
       - Тарифы
     post:
@@ -567,33 +605,39 @@ paths:
       - Тарифы
   /tariffs/feed:
     get:
-      description: Чтение доступно независимо от JWT. Валидный Authorization добавляет
-        персональные is_owner/is_liked; неверный, истёкший или отозванный JWT трактуется
-        как гостевой запрос.
+      description: При первом обращении создаёт 100 уникальных карточек. Сессия feed_session
+        — HttpOnly cookie без авторизации, TTL Redis 24 часа. position — сквозной
+        номер. init не продвигает ленту.
       parameters:
-      - description: Bearer <JWT>, необязательно
+      - description: Bearer JWT
         in: header
         name: Authorization
         type: string
-      - description: ID опубликованной карточки
+      - description: Порядковый номер в текущем наборе или сразу после него
         in: query
+        minimum: 1
+        name: position
+        type: integer
+      - description: Сформировать/восстановить ленту при старте приложения
+        in: query
+        name: init
+        type: boolean
+      - description: Открыть карточку из плитки
+        in: query
+        minimum: 1
         name: id
         type: integer
-      - description: Следующая карточка; требует id
+      - description: Следующая в Redis-порядке после id
         in: query
         name: next
         type: boolean
-      - description: Следующая после ID; отдельно от id и next
-        in: query
-        name: after_id
-        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.TariffEnvelope'
+            $ref: '#/definitions/handler.FeedEnvelope'
         "400":
           description: Bad Request
           schema:
@@ -602,15 +646,15 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/handler.ErrorEnvelope'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/handler.ErrorEnvelope'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handler.ErrorEnvelope'
-      summary: Карточка ленты
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handler.ErrorEnvelope'
+      summary: Карточка случайной ленты из Redis
       tags:
       - Тарифы
   /users:

@@ -10,6 +10,7 @@ import (
 
 	"cloud-tariffs-backend/internal/app/ds"
 	"cloud-tariffs-backend/internal/app/dsn"
+	"cloud-tariffs-backend/internal/app/repository"
 )
 
 // Подготавливаем PostgreSQL: создаём нужные таблицы и ограничения, затем учебные данные для входа.
@@ -75,6 +76,10 @@ func main() {
 		log.Fatalf("не удалось создать индекс одного черновика: %v", err)
 	}
 
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_likes_tariff ON user_tariff_likes(tariff_id)").Error; err != nil {
+		log.Fatal(err)
+	}
+
 	// ЛР4. Создаём bcrypt-хеш учебного пароля student123, чтобы учебный аккаунт мог реально войти.
 	hash, err := bcrypt.GenerateFromPassword([]byte("student123"), bcrypt.DefaultCost)
 	if err != nil {
@@ -101,11 +106,16 @@ func main() {
 	// Переход от старых полных адресов MinIO к хранению имён объектов. Сами файлы не перемещаем.
 	if err := db.Exec(`UPDATE cloud_tariffs SET
         image_url = CASE WHEN image_url ~ '^https?://' THEN regexp_replace(image_url, '^.*/', '') ELSE image_url END,
-        video_url = CASE WHEN video_url ~ '^https?://' THEN regexp_replace(video_url, '^.*/', '') ELSE video_url END`).Error; err != nil {
+        video_url = CASE WHEN video_url ~ '^https?://' THEN regexp_replace(video_url, '^.*/', '') ELSE video_url END
+        WHERE image_url ~ '^https?://' OR video_url ~ '^https?://'`).Error; err != nil {
 		log.Fatal(err)
 	}
 	// Согласуем следующий автоматически выдаваемый ID пользователя с уже существующими строками.
 	if err := db.Exec(`SELECT setval(pg_get_serial_sequence('users','user_id'), GREATEST((SELECT COALESCE(MAX(user_id),1) FROM users), (SELECT last_value FROM users_user_id_seq)), true)`).Error; err != nil {
+		log.Fatal(err)
+	}
+
+	if err := db.Exec(repository.CreatePriceIndex).Error; err != nil {
 		log.Fatal(err)
 	}
 

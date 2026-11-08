@@ -75,7 +75,7 @@ func TestLifecycleAndVisibility(t *testing.T) {
 		t.Fatalf("publish/creator failed: %+v %v", pub, err)
 	}
 	cap := 150
-	list, err := r.GetPublishedTariffs(&cap, 1)
+	list, _, _, err := r.GetPublishedTariffs(ctx, &cap, 1, 10, 0)
 	if err != nil || len(list) != 1 || list[0].IsOwner != 1 {
 		t.Fatalf("filter: %+v %v", list, err)
 	}
@@ -135,18 +135,6 @@ func TestDraftIsolationAndUniqueIndex(t *testing.T) {
 	}
 }
 
-// Проверяем переход от последней опубликованной карточки к первой.
-func TestFeedWrap(t *testing.T) {
-	r := testRepo(t)
-	a := add(t, r, 1, ds.StatusPublished, 100)
-	b := add(t, r, 2, ds.StatusPublished, 200)
-	add(t, r, 1, ds.StatusDeleted, 1)
-	next, err := r.GetNextPublishedTariff(b.TariffID, 1)
-	if err != nil || next.TariffID != a.TariffID {
-		t.Fatal("feed wrap failed")
-	}
-}
-
 // Проверяем, что is_owner/is_liked зависят от текущего пользователя, а like_count общий.
 func TestTwoUsersHaveSeparateLikesAndOwnership(t *testing.T) {
 	r := testRepo(t)
@@ -159,7 +147,7 @@ func TestTwoUsersHaveSeparateLikesAndOwnership(t *testing.T) {
 		user         uint
 		liked, owner int
 	}{{0, 0, 0}, {1, 1, 0}, {2, 0, 1}} {
-		list, err := r.GetPublishedTariffs(nil, tc.user)
+		list, _, _, err := r.GetPublishedTariffs(ctx, nil, tc.user, 10, 0)
 		if err != nil || len(list) != 1 || list[0].IsLiked != tc.liked || list[0].IsOwner != tc.owner || list[0].LikeCount != 1 {
 			t.Fatalf("user %d: %+v %v", tc.user, list, err)
 		}
