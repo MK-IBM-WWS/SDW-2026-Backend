@@ -427,8 +427,13 @@ type publishRequest struct {
 // @Tags Тарифы
 // @Produce json
 // @Param id path int true "Положительный ID" minimum(1)
-// @Accept json
-// @Param body body publishRequest true "Поля публикации"
+// @Accept multipart/form-data
+// @Param tariff_name formData string true "Название, 1–100 символов"
+// @Param short_description formData string true "Описание, 1–500 символов"
+// @Param price_per_month formData int true "Цена >= 0"
+// @Param ram_gb formData int true "RAM > 0"
+// @Param image formData file false "Новое фото, до 10 МБ; без файла сохраняется прежнее"
+// @Param video formData file false "Новое видео, до 50 МБ; без файла сохраняется прежнее"
 // @Security BearerAuth
 // @Failure 401 {object} ErrorEnvelope "Нет JWT, токен истёк или отозван"
 // @Failure 403 {object} ErrorEnvelope "Чужой тариф или недопустимая роль"
@@ -447,8 +452,11 @@ func (h *Handler) PublishAPI(c *gin.Context) {
 	if !ok {
 		return
 	}
-	var body publishRequest
-	if !strictJSON(c, &body) {
+	body, img, vid, ok := parsePublication(c)
+	if c.Request.MultipartForm != nil {
+		defer c.Request.MultipartForm.RemoveAll()
+	}
+	if !ok {
 		return
 	}
 	body.Name = strings.TrimSpace(body.Name)
@@ -459,7 +467,7 @@ func (h *Handler) PublishAPI(c *gin.Context) {
 	}
 	// Передаём ID пользователя из JWT вместе с ID тарифа.
 	// Репозиторий сравнит владельца: одного факта входа для чужой публикации недостаточно.
-	err := h.Repository.PublishDraftTariff(repository.PublishTariffInput{TariffID: id, CreatorID: currentuser.Get(c).ID(), TariffName: body.Name, ShortDescription: body.Description, PricePerMonth: *body.Price, RAMGB: *body.RAM})
+	err := h.Repository.PublishDraftTariff(repository.PublishTariffInput{TariffID: id, CreatorID: currentuser.Get(c).ID(), TariffName: body.Name, ShortDescription: body.Description, PricePerMonth: *body.Price, RAMGB: *body.RAM, Context: c.Request.Context(), Image: img, Video: vid})
 	if err != nil {
 		apiError(c, err)
 		return

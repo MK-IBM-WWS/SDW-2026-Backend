@@ -99,6 +99,8 @@ type PublishTariffInput struct {
 	ShortDescription string
 	PricePerMonth    int
 	RAMGB            int
+	Context          context.Context
+	Image, Video     *Upload
 }
 
 // Проверка авторизации для конкретного тарифа: запись существует, не удалена и принадлежит этому пользователю.
@@ -122,7 +124,12 @@ func ownedActive(tx *gorm.DB, id, creator uint) (*ds.CloudTariff, error) {
 // Транзакция объединяет проверку владельца и обновление полей в одну операцию с данными.
 // Если одна часть не удалась, изменения транзакции отменяются.
 func (r *Repository) PublishDraftTariff(in PublishTariffInput) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
+	ctx := in.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	var image, video, oldImage, oldVideo string
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		t, err := ownedActive(tx, in.TariffID, in.CreatorID)
 		if err != nil {
 			return err
@@ -130,12 +137,49 @@ func (r *Repository) PublishDraftTariff(in PublishTariffInput) error {
 		if t.TariffStatus != ds.StatusDraft {
 			return ErrInvalidState
 		}
-		return tx.Model(t).Updates(map[string]any{
+		// Загружаем только выбранные новые файлы после проверки владельца.
+		image, err = r.upload(ctx, in.Image, "image")
+		if err != nil {
+			return err
+		}
+		video, err = r.upload(ctx, in.Video, "video")
+		if err != nil {
+			return err
+		}
+		fields := map[string]any{
 			"tariff_name": in.TariffName, "short_description": in.ShortDescription,
 			"price_per_month": in.PricePerMonth, "ram_gb": in.RAMGB,
 			"tariff_status": ds.StatusPublished, "formed_at": time.Now().UTC(),
-		}).Error
+		}
+		if image != "" {
+			oldImage = t.ImageURL
+			fields["image_url"] = image
+		}
+		if video != "" {
+			oldVideo = t.VideoURL
+			fields["video_url"] = video
+		}
+		// UPDATE существующей строки: ID тарифа и автор остаются прежними.
+		return tx.Model(t).Updates(fields).Error
 	})
+	if err != nil {
+		// При сбое загрузки/БД старые поля остаются, новые объекты убираем.
+		if image != "" || video != "" {
+			r.cleanup(image, video)
+		}
+		return err
+	}
+	// Общие демонстрационные объекты не удаляем, пока на них есть ссылки.
+	for _, name := range []string{oldImage, oldVideo} {
+		if name == "" {
+			continue
+		}
+		var count int64
+		if err := r.db.Model(&ds.CloudTariff{}).Where("image_url = ? OR video_url = ?", name, name).Count(&count).Error; err == nil && count == 0 {
+			r.cleanup(name)
+		}
+	}
+	return nil
 }
 
 // Soft delete: меняем статус, но сохраняем запись, файлы и лайки. Сначала проверяем владельца.

@@ -233,17 +233,6 @@ definitions:
         example: 1
         type: integer
     type: object
-  handler.publishRequest:
-    properties:
-      price_per_month:
-        type: integer
-      ram_gb:
-        type: integer
-      short_description:
-        type: string
-      tariff_name:
-        type: string
-    type: object
 info:
   contact: {}
   description: Каталог облачных тарифов. Публичное чтение, JWT для методов создателя.
@@ -458,7 +447,7 @@ paths:
   /tariffs/{id}/publication:
     put:
       consumes:
-      - application/json
+      - multipart/form-data
       parameters:
       - description: Положительный ID
         in: path
@@ -466,12 +455,34 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Поля публикации
-        in: body
-        name: body
+      - description: Название, 1–100 символов
+        in: formData
+        name: tariff_name
         required: true
-        schema:
-          $ref: '#/definitions/handler.publishRequest'
+        type: string
+      - description: Описание, 1–500 символов
+        in: formData
+        name: short_description
+        required: true
+        type: string
+      - description: Цена >= 0
+        in: formData
+        name: price_per_month
+        required: true
+        type: integer
+      - description: RAM > 0
+        in: formData
+        name: ram_gb
+        required: true
+        type: integer
+      - description: Новое фото, до 10 МБ; без файла сохраняется прежнее
+        in: formData
+        name: image
+        type: file
+      - description: Новое видео, до 50 МБ; без файла сохраняется прежнее
+        in: formData
+        name: video
+        type: file
       produces:
       - application/json
       responses:

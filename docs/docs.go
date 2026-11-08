@@ -470,7 +470,7 @@ const docTemplate = `{
                     }
                 ],
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -489,13 +489,44 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Поля публикации",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handler.publishRequest"
-                        }
+                        "type": "string",
+                        "description": "Название, 1–100 символов",
+                        "name": "tariff_name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Описание, 1–500 символов",
+                        "name": "short_description",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Цена \u003e= 0",
+                        "name": "price_per_month",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "RAM \u003e 0",
+                        "name": "ram_gb",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Новое фото, до 10 МБ; без файла сохраняется прежнее",
+                        "name": "image",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Новое видео, до 50 МБ; без файла сохраняется прежнее",
+                        "name": "video",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -1076,23 +1107,6 @@ const docTemplate = `{
                 "value": {
                     "type": "integer",
                     "example": 1
-                }
-            }
-        },
-        "handler.publishRequest": {
-            "type": "object",
-            "properties": {
-                "price_per_month": {
-                    "type": "integer"
-                },
-                "ram_gb": {
-                    "type": "integer"
-                },
-                "short_description": {
-                    "type": "string"
-                },
-                "tariff_name": {
-                    "type": "string"
                 }
             }
         }
