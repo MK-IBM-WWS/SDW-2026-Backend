@@ -1,3 +1,7 @@
+# Дополнение: Tauri + CLIP
+
+Запуск и новые гостевые методы: [README_NATIVE.md](README_NATIVE.md).
+
 # Индексы в БД
 
 Go + Gin + GORM, PostgreSQL, Redis, MinIO.

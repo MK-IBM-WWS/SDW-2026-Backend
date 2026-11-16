@@ -145,6 +145,10 @@ func NewRouter(h *handler.Handler, a *auth.Service) *gin.Engine {
 	// Отдаём Swagger UI и сгенерированное описание API.
 	// UI отправляет настоящие запросы, а правила доступа всё равно проверяет middleware.
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
+	// Guest-only extension: no login, mutations, feed cache or Vite proxy.
+	router.GET("/api/native/tariffs", h.NativeListAPI)
+	router.GET("/api/native/tariffs/:id", h.NativeDetailAPI)
+	router.GET("/api/native/tariffs/:id/image", h.NativeImageAPI)
 	RegisterAPI(router, h, a)
 	// При открытии корня сайта переводим браузер на Swagger: обычного фронтенда в ЛР4 нет.
 	router.GET("/", func(c *gin.Context) { c.Redirect(http.StatusFound, "/swagger/index.html") })

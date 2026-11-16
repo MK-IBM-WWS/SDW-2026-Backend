@@ -1,0 +1,802 @@
+[
+  {
+    "tariff_name": "CLIP-cat-01 · Облачный ИИ: Кошки",
+    "short_description": "A photo of a fluffy cat resting on a sofa, for cloud image recognition Basic plan.",
+    "price_per_month": 500,
+    "ram_gb": 2,
+    "category": "cat",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+  },
+  {
+    "tariff_name": "CLIP-cat-02 · Облачный ИИ: Кошки",
+    "short_description": "A photo of a fluffy cat resting on a sofa, for cloud image recognition Standard plan.",
+    "price_per_month": 750,
+    "ram_gb": 4,
+    "category": "cat",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+  },
+  {
+    "tariff_name": "CLIP-cat-03 · Облачный ИИ: Кошки",
+    "short_description": "A photo of a fluffy cat resting on a sofa, for cloud image recognition Plus plan.",
+    "price_per_month": 1000,
+    "ram_gb": 8,
+    "category": "cat",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+  },
+  {
+    "tariff_name": "CLIP-cat-04 · Облачный ИИ: Кошки",
+    "short_description": "A photo of a fluffy cat resting on a sofa, for cloud image recognition Pro plan.",
+    "price_per_month": 1250,
+    "ram_gb": 12,
+    "category": "cat",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+  },
+  {
+    "tariff_name": "CLIP-cat-05 · Облачный ИИ: Кошки",
+    "short_description": "A photo of a fluffy cat resting on a sofa, for cloud image recognition Team plan.",
+    "price_per_month": 1500,
+    "ram_gb": 16,
+    "category": "cat",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+  },
+  {
+    "tariff_name": "CLIP-cat-06 · Облачный ИИ: Кошки",
+    "short_description": "A photo of a fluffy cat resting on a sofa, for cloud image recognition Business plan.",
+    "price_per_month": 1750,
+    "ram_gb": 24,
+    "category": "cat",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+  },
+  {
+    "tariff_name": "CLIP-cat-07 · Облачный ИИ: Кошки",
+    "short_description": "A photo of a fluffy cat resting on a sofa, for cloud image recognition Advanced plan.",
+    "price_per_month": 2000,
+    "ram_gb": 32,
+    "category": "cat",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+  },
+  {
+    "tariff_name": "CLIP-cat-08 · Облачный ИИ: Кошки",
+    "short_description": "A photo of a fluffy cat resting on a sofa, for cloud image recognition Premium plan.",
+    "price_per_month": 2250,
+    "ram_gb": 48,
+    "category": "cat",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+  },
+  {
+    "tariff_name": "CLIP-cat-09 · Облачный ИИ: Кошки",
+    "short_description": "A photo of a fluffy cat resting on a sofa, for cloud image recognition Enterprise plan.",
+    "price_per_month": 2500,
+    "ram_gb": 64,
+    "category": "cat",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+  },
+  {
+    "tariff_name": "CLIP-cat-10 · Облачный ИИ: Кошки",
+    "short_description": "A photo of a fluffy cat resting on a sofa, for cloud image recognition Ultimate plan.",
+    "price_per_month": 2750,
+    "ram_gb": 96,
+    "category": "cat",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+  },
+  {
+    "tariff_name": "CLIP-dog-01 · Облачный ИИ: Собаки",
+    "short_description": "A photo of a friendly dog outdoors in the grass, for cloud image recognition Basic plan.",
+    "price_per_month": 600,
+    "ram_gb": 2,
+    "category": "dog",
+    "image_url": "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-dog-02 · Облачный ИИ: Собаки",
+    "short_description": "A photo of a friendly dog outdoors in the grass, for cloud image recognition Standard plan.",
+    "price_per_month": 850,
+    "ram_gb": 4,
+    "category": "dog",
+    "image_url": "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-dog-03 · Облачный ИИ: Собаки",
+    "short_description": "A photo of a friendly dog outdoors in the grass, for cloud image recognition Plus plan.",
+    "price_per_month": 1100,
+    "ram_gb": 8,
+    "category": "dog",
+    "image_url": "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-dog-04 · Облачный ИИ: Собаки",
+    "short_description": "A photo of a friendly dog outdoors in the grass, for cloud image recognition Pro plan.",
+    "price_per_month": 1350,
+    "ram_gb": 12,
+    "category": "dog",
+    "image_url": "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-dog-05 · Облачный ИИ: Собаки",
+    "short_description": "A photo of a friendly dog outdoors in the grass, for cloud image recognition Team plan.",
+    "price_per_month": 1600,
+    "ram_gb": 16,
+    "category": "dog",
+    "image_url": "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-dog-06 · Облачный ИИ: Собаки",
+    "short_description": "A photo of a friendly dog outdoors in the grass, for cloud image recognition Business plan.",
+    "price_per_month": 1850,
+    "ram_gb": 24,
+    "category": "dog",
+    "image_url": "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-dog-07 · Облачный ИИ: Собаки",
+    "short_description": "A photo of a friendly dog outdoors in the grass, for cloud image recognition Advanced plan.",
+    "price_per_month": 2100,
+    "ram_gb": 32,
+    "category": "dog",
+    "image_url": "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-dog-08 · Облачный ИИ: Собаки",
+    "short_description": "A photo of a friendly dog outdoors in the grass, for cloud image recognition Premium plan.",
+    "price_per_month": 2350,
+    "ram_gb": 48,
+    "category": "dog",
+    "image_url": "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-dog-09 · Облачный ИИ: Собаки",
+    "short_description": "A photo of a friendly dog outdoors in the grass, for cloud image recognition Enterprise plan.",
+    "price_per_month": 2600,
+    "ram_gb": 64,
+    "category": "dog",
+    "image_url": "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-dog-10 · Облачный ИИ: Собаки",
+    "short_description": "A photo of a friendly dog outdoors in the grass, for cloud image recognition Ultimate plan.",
+    "price_per_month": 2850,
+    "ram_gb": 96,
+    "category": "dog",
+    "image_url": "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-horse-01 · Облачный ИИ: Лошади",
+    "short_description": "A photo of a horse standing in a green field, for cloud image recognition Basic plan.",
+    "price_per_month": 700,
+    "ram_gb": 2,
+    "category": "horse",
+    "image_url": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-horse-02 · Облачный ИИ: Лошади",
+    "short_description": "A photo of a horse standing in a green field, for cloud image recognition Standard plan.",
+    "price_per_month": 950,
+    "ram_gb": 4,
+    "category": "horse",
+    "image_url": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-horse-03 · Облачный ИИ: Лошади",
+    "short_description": "A photo of a horse standing in a green field, for cloud image recognition Plus plan.",
+    "price_per_month": 1200,
+    "ram_gb": 8,
+    "category": "horse",
+    "image_url": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-horse-04 · Облачный ИИ: Лошади",
+    "short_description": "A photo of a horse standing in a green field, for cloud image recognition Pro plan.",
+    "price_per_month": 1450,
+    "ram_gb": 12,
+    "category": "horse",
+    "image_url": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-horse-05 · Облачный ИИ: Лошади",
+    "short_description": "A photo of a horse standing in a green field, for cloud image recognition Team plan.",
+    "price_per_month": 1700,
+    "ram_gb": 16,
+    "category": "horse",
+    "image_url": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-horse-06 · Облачный ИИ: Лошади",
+    "short_description": "A photo of a horse standing in a green field, for cloud image recognition Business plan.",
+    "price_per_month": 1950,
+    "ram_gb": 24,
+    "category": "horse",
+    "image_url": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-horse-07 · Облачный ИИ: Лошади",
+    "short_description": "A photo of a horse standing in a green field, for cloud image recognition Advanced plan.",
+    "price_per_month": 2200,
+    "ram_gb": 32,
+    "category": "horse",
+    "image_url": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-horse-08 · Облачный ИИ: Лошади",
+    "short_description": "A photo of a horse standing in a green field, for cloud image recognition Premium plan.",
+    "price_per_month": 2450,
+    "ram_gb": 48,
+    "category": "horse",
+    "image_url": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-horse-09 · Облачный ИИ: Лошади",
+    "short_description": "A photo of a horse standing in a green field, for cloud image recognition Enterprise plan.",
+    "price_per_month": 2700,
+    "ram_gb": 64,
+    "category": "horse",
+    "image_url": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-horse-10 · Облачный ИИ: Лошади",
+    "short_description": "A photo of a horse standing in a green field, for cloud image recognition Ultimate plan.",
+    "price_per_month": 2950,
+    "ram_gb": 96,
+    "category": "horse",
+    "image_url": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-tiger-01 · Облачный ИИ: Тигры",
+    "short_description": "A photo of a striped tiger walking in the wild, for cloud image recognition Basic plan.",
+    "price_per_month": 800,
+    "ram_gb": 2,
+    "category": "tiger",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg"
+  },
+  {
+    "tariff_name": "CLIP-tiger-02 · Облачный ИИ: Тигры",
+    "short_description": "A photo of a striped tiger walking in the wild, for cloud image recognition Standard plan.",
+    "price_per_month": 1050,
+    "ram_gb": 4,
+    "category": "tiger",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg"
+  },
+  {
+    "tariff_name": "CLIP-tiger-03 · Облачный ИИ: Тигры",
+    "short_description": "A photo of a striped tiger walking in the wild, for cloud image recognition Plus plan.",
+    "price_per_month": 1300,
+    "ram_gb": 8,
+    "category": "tiger",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg"
+  },
+  {
+    "tariff_name": "CLIP-tiger-04 · Облачный ИИ: Тигры",
+    "short_description": "A photo of a striped tiger walking in the wild, for cloud image recognition Pro plan.",
+    "price_per_month": 1550,
+    "ram_gb": 12,
+    "category": "tiger",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg"
+  },
+  {
+    "tariff_name": "CLIP-tiger-05 · Облачный ИИ: Тигры",
+    "short_description": "A photo of a striped tiger walking in the wild, for cloud image recognition Team plan.",
+    "price_per_month": 1800,
+    "ram_gb": 16,
+    "category": "tiger",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg"
+  },
+  {
+    "tariff_name": "CLIP-tiger-06 · Облачный ИИ: Тигры",
+    "short_description": "A photo of a striped tiger walking in the wild, for cloud image recognition Business plan.",
+    "price_per_month": 2050,
+    "ram_gb": 24,
+    "category": "tiger",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg"
+  },
+  {
+    "tariff_name": "CLIP-tiger-07 · Облачный ИИ: Тигры",
+    "short_description": "A photo of a striped tiger walking in the wild, for cloud image recognition Advanced plan.",
+    "price_per_month": 2300,
+    "ram_gb": 32,
+    "category": "tiger",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg"
+  },
+  {
+    "tariff_name": "CLIP-tiger-08 · Облачный ИИ: Тигры",
+    "short_description": "A photo of a striped tiger walking in the wild, for cloud image recognition Premium plan.",
+    "price_per_month": 2550,
+    "ram_gb": 48,
+    "category": "tiger",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg"
+  },
+  {
+    "tariff_name": "CLIP-tiger-09 · Облачный ИИ: Тигры",
+    "short_description": "A photo of a striped tiger walking in the wild, for cloud image recognition Enterprise plan.",
+    "price_per_month": 2800,
+    "ram_gb": 64,
+    "category": "tiger",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg"
+  },
+  {
+    "tariff_name": "CLIP-tiger-10 · Облачный ИИ: Тигры",
+    "short_description": "A photo of a striped tiger walking in the wild, for cloud image recognition Ultimate plan.",
+    "price_per_month": 3050,
+    "ram_gb": 96,
+    "category": "tiger",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg"
+  },
+  {
+    "tariff_name": "CLIP-elephant-01 · Облачный ИИ: Слоны",
+    "short_description": "A photo of a large elephant in a natural landscape, for cloud image recognition Basic plan.",
+    "price_per_month": 900,
+    "ram_gb": 2,
+    "category": "elephant",
+    "image_url": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-elephant-02 · Облачный ИИ: Слоны",
+    "short_description": "A photo of a large elephant in a natural landscape, for cloud image recognition Standard plan.",
+    "price_per_month": 1150,
+    "ram_gb": 4,
+    "category": "elephant",
+    "image_url": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-elephant-03 · Облачный ИИ: Слоны",
+    "short_description": "A photo of a large elephant in a natural landscape, for cloud image recognition Plus plan.",
+    "price_per_month": 1400,
+    "ram_gb": 8,
+    "category": "elephant",
+    "image_url": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-elephant-04 · Облачный ИИ: Слоны",
+    "short_description": "A photo of a large elephant in a natural landscape, for cloud image recognition Pro plan.",
+    "price_per_month": 1650,
+    "ram_gb": 12,
+    "category": "elephant",
+    "image_url": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-elephant-05 · Облачный ИИ: Слоны",
+    "short_description": "A photo of a large elephant in a natural landscape, for cloud image recognition Team plan.",
+    "price_per_month": 1900,
+    "ram_gb": 16,
+    "category": "elephant",
+    "image_url": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-elephant-06 · Облачный ИИ: Слоны",
+    "short_description": "A photo of a large elephant in a natural landscape, for cloud image recognition Business plan.",
+    "price_per_month": 2150,
+    "ram_gb": 24,
+    "category": "elephant",
+    "image_url": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-elephant-07 · Облачный ИИ: Слоны",
+    "short_description": "A photo of a large elephant in a natural landscape, for cloud image recognition Advanced plan.",
+    "price_per_month": 2400,
+    "ram_gb": 32,
+    "category": "elephant",
+    "image_url": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-elephant-08 · Облачный ИИ: Слоны",
+    "short_description": "A photo of a large elephant in a natural landscape, for cloud image recognition Premium plan.",
+    "price_per_month": 2650,
+    "ram_gb": 48,
+    "category": "elephant",
+    "image_url": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-elephant-09 · Облачный ИИ: Слоны",
+    "short_description": "A photo of a large elephant in a natural landscape, for cloud image recognition Enterprise plan.",
+    "price_per_month": 2900,
+    "ram_gb": 64,
+    "category": "elephant",
+    "image_url": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-elephant-10 · Облачный ИИ: Слоны",
+    "short_description": "A photo of a large elephant in a natural landscape, for cloud image recognition Ultimate plan.",
+    "price_per_month": 3150,
+    "ram_gb": 96,
+    "category": "elephant",
+    "image_url": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bird-01 · Облачный ИИ: Птицы",
+    "short_description": "A photo of a colorful bird sitting on a branch, for cloud image recognition Basic plan.",
+    "price_per_month": 1000,
+    "ram_gb": 2,
+    "category": "bird",
+    "image_url": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bird-02 · Облачный ИИ: Птицы",
+    "short_description": "A photo of a colorful bird sitting on a branch, for cloud image recognition Standard plan.",
+    "price_per_month": 1250,
+    "ram_gb": 4,
+    "category": "bird",
+    "image_url": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bird-03 · Облачный ИИ: Птицы",
+    "short_description": "A photo of a colorful bird sitting on a branch, for cloud image recognition Plus plan.",
+    "price_per_month": 1500,
+    "ram_gb": 8,
+    "category": "bird",
+    "image_url": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bird-04 · Облачный ИИ: Птицы",
+    "short_description": "A photo of a colorful bird sitting on a branch, for cloud image recognition Pro plan.",
+    "price_per_month": 1750,
+    "ram_gb": 12,
+    "category": "bird",
+    "image_url": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bird-05 · Облачный ИИ: Птицы",
+    "short_description": "A photo of a colorful bird sitting on a branch, for cloud image recognition Team plan.",
+    "price_per_month": 2000,
+    "ram_gb": 16,
+    "category": "bird",
+    "image_url": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bird-06 · Облачный ИИ: Птицы",
+    "short_description": "A photo of a colorful bird sitting on a branch, for cloud image recognition Business plan.",
+    "price_per_month": 2250,
+    "ram_gb": 24,
+    "category": "bird",
+    "image_url": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bird-07 · Облачный ИИ: Птицы",
+    "short_description": "A photo of a colorful bird sitting on a branch, for cloud image recognition Advanced plan.",
+    "price_per_month": 2500,
+    "ram_gb": 32,
+    "category": "bird",
+    "image_url": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bird-08 · Облачный ИИ: Птицы",
+    "short_description": "A photo of a colorful bird sitting on a branch, for cloud image recognition Premium plan.",
+    "price_per_month": 2750,
+    "ram_gb": 48,
+    "category": "bird",
+    "image_url": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bird-09 · Облачный ИИ: Птицы",
+    "short_description": "A photo of a colorful bird sitting on a branch, for cloud image recognition Enterprise plan.",
+    "price_per_month": 3000,
+    "ram_gb": 64,
+    "category": "bird",
+    "image_url": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bird-10 · Облачный ИИ: Птицы",
+    "short_description": "A photo of a colorful bird sitting on a branch, for cloud image recognition Ultimate plan.",
+    "price_per_month": 3250,
+    "ram_gb": 96,
+    "category": "bird",
+    "image_url": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-car-01 · Облачный ИИ: Автомобили",
+    "short_description": "A photo of a car parked on a road, for cloud vehicle image recognition Basic plan.",
+    "price_per_month": 1100,
+    "ram_gb": 2,
+    "category": "car",
+    "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-car-02 · Облачный ИИ: Автомобили",
+    "short_description": "A photo of a car parked on a road, for cloud vehicle image recognition Standard plan.",
+    "price_per_month": 1350,
+    "ram_gb": 4,
+    "category": "car",
+    "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-car-03 · Облачный ИИ: Автомобили",
+    "short_description": "A photo of a car parked on a road, for cloud vehicle image recognition Plus plan.",
+    "price_per_month": 1600,
+    "ram_gb": 8,
+    "category": "car",
+    "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-car-04 · Облачный ИИ: Автомобили",
+    "short_description": "A photo of a car parked on a road, for cloud vehicle image recognition Pro plan.",
+    "price_per_month": 1850,
+    "ram_gb": 12,
+    "category": "car",
+    "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-car-05 · Облачный ИИ: Автомобили",
+    "short_description": "A photo of a car parked on a road, for cloud vehicle image recognition Team plan.",
+    "price_per_month": 2100,
+    "ram_gb": 16,
+    "category": "car",
+    "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-car-06 · Облачный ИИ: Автомобили",
+    "short_description": "A photo of a car parked on a road, for cloud vehicle image recognition Business plan.",
+    "price_per_month": 2350,
+    "ram_gb": 24,
+    "category": "car",
+    "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-car-07 · Облачный ИИ: Автомобили",
+    "short_description": "A photo of a car parked on a road, for cloud vehicle image recognition Advanced plan.",
+    "price_per_month": 2600,
+    "ram_gb": 32,
+    "category": "car",
+    "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-car-08 · Облачный ИИ: Автомобили",
+    "short_description": "A photo of a car parked on a road, for cloud vehicle image recognition Premium plan.",
+    "price_per_month": 2850,
+    "ram_gb": 48,
+    "category": "car",
+    "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-car-09 · Облачный ИИ: Автомобили",
+    "short_description": "A photo of a car parked on a road, for cloud vehicle image recognition Enterprise plan.",
+    "price_per_month": 3100,
+    "ram_gb": 64,
+    "category": "car",
+    "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-car-10 · Облачный ИИ: Автомобили",
+    "short_description": "A photo of a car parked on a road, for cloud vehicle image recognition Ultimate plan.",
+    "price_per_month": 3350,
+    "ram_gb": 96,
+    "category": "car",
+    "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bicycle-01 · Облачный ИИ: Велосипеды",
+    "short_description": "A photo of a bicycle with two wheels outdoors, for cloud image recognition Basic plan.",
+    "price_per_month": 1200,
+    "ram_gb": 2,
+    "category": "bicycle",
+    "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bicycle-02 · Облачный ИИ: Велосипеды",
+    "short_description": "A photo of a bicycle with two wheels outdoors, for cloud image recognition Standard plan.",
+    "price_per_month": 1450,
+    "ram_gb": 4,
+    "category": "bicycle",
+    "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bicycle-03 · Облачный ИИ: Велосипеды",
+    "short_description": "A photo of a bicycle with two wheels outdoors, for cloud image recognition Plus plan.",
+    "price_per_month": 1700,
+    "ram_gb": 8,
+    "category": "bicycle",
+    "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bicycle-04 · Облачный ИИ: Велосипеды",
+    "short_description": "A photo of a bicycle with two wheels outdoors, for cloud image recognition Pro plan.",
+    "price_per_month": 1950,
+    "ram_gb": 12,
+    "category": "bicycle",
+    "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bicycle-05 · Облачный ИИ: Велосипеды",
+    "short_description": "A photo of a bicycle with two wheels outdoors, for cloud image recognition Team plan.",
+    "price_per_month": 2200,
+    "ram_gb": 16,
+    "category": "bicycle",
+    "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bicycle-06 · Облачный ИИ: Велосипеды",
+    "short_description": "A photo of a bicycle with two wheels outdoors, for cloud image recognition Business plan.",
+    "price_per_month": 2450,
+    "ram_gb": 24,
+    "category": "bicycle",
+    "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bicycle-07 · Облачный ИИ: Велосипеды",
+    "short_description": "A photo of a bicycle with two wheels outdoors, for cloud image recognition Advanced plan.",
+    "price_per_month": 2700,
+    "ram_gb": 32,
+    "category": "bicycle",
+    "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bicycle-08 · Облачный ИИ: Велосипеды",
+    "short_description": "A photo of a bicycle with two wheels outdoors, for cloud image recognition Premium plan.",
+    "price_per_month": 2950,
+    "ram_gb": 48,
+    "category": "bicycle",
+    "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bicycle-09 · Облачный ИИ: Велосипеды",
+    "short_description": "A photo of a bicycle with two wheels outdoors, for cloud image recognition Enterprise plan.",
+    "price_per_month": 3200,
+    "ram_gb": 64,
+    "category": "bicycle",
+    "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-bicycle-10 · Облачный ИИ: Велосипеды",
+    "short_description": "A photo of a bicycle with two wheels outdoors, for cloud image recognition Ultimate plan.",
+    "price_per_month": 3450,
+    "ram_gb": 96,
+    "category": "bicycle",
+    "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-flower-01 · Облачный ИИ: Цветы",
+    "short_description": "A photo of a blooming flower with bright petals, for cloud image recognition Basic plan.",
+    "price_per_month": 1300,
+    "ram_gb": 2,
+    "category": "flower",
+    "image_url": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-flower-02 · Облачный ИИ: Цветы",
+    "short_description": "A photo of a blooming flower with bright petals, for cloud image recognition Standard plan.",
+    "price_per_month": 1550,
+    "ram_gb": 4,
+    "category": "flower",
+    "image_url": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-flower-03 · Облачный ИИ: Цветы",
+    "short_description": "A photo of a blooming flower with bright petals, for cloud image recognition Plus plan.",
+    "price_per_month": 1800,
+    "ram_gb": 8,
+    "category": "flower",
+    "image_url": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-flower-04 · Облачный ИИ: Цветы",
+    "short_description": "A photo of a blooming flower with bright petals, for cloud image recognition Pro plan.",
+    "price_per_month": 2050,
+    "ram_gb": 12,
+    "category": "flower",
+    "image_url": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-flower-05 · Облачный ИИ: Цветы",
+    "short_description": "A photo of a blooming flower with bright petals, for cloud image recognition Team plan.",
+    "price_per_month": 2300,
+    "ram_gb": 16,
+    "category": "flower",
+    "image_url": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-flower-06 · Облачный ИИ: Цветы",
+    "short_description": "A photo of a blooming flower with bright petals, for cloud image recognition Business plan.",
+    "price_per_month": 2550,
+    "ram_gb": 24,
+    "category": "flower",
+    "image_url": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-flower-07 · Облачный ИИ: Цветы",
+    "short_description": "A photo of a blooming flower with bright petals, for cloud image recognition Advanced plan.",
+    "price_per_month": 2800,
+    "ram_gb": 32,
+    "category": "flower",
+    "image_url": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-flower-08 · Облачный ИИ: Цветы",
+    "short_description": "A photo of a blooming flower with bright petals, for cloud image recognition Premium plan.",
+    "price_per_month": 3050,
+    "ram_gb": 48,
+    "category": "flower",
+    "image_url": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-flower-09 · Облачный ИИ: Цветы",
+    "short_description": "A photo of a blooming flower with bright petals, for cloud image recognition Enterprise plan.",
+    "price_per_month": 3300,
+    "ram_gb": 64,
+    "category": "flower",
+    "image_url": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-flower-10 · Облачный ИИ: Цветы",
+    "short_description": "A photo of a blooming flower with bright petals, for cloud image recognition Ultimate plan.",
+    "price_per_month": 3550,
+    "ram_gb": 96,
+    "category": "flower",
+    "image_url": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=640&q=85"
+  },
+  {
+    "tariff_name": "CLIP-football-01 · Облачный ИИ: Футбол",
+    "short_description": "A photo of players on a football field, for cloud sports image recognition Basic plan.",
+    "price_per_month": 1400,
+    "ram_gb": 2,
+    "category": "football",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/football-match.jpg"
+  },
+  {
+    "tariff_name": "CLIP-football-02 · Облачный ИИ: Футбол",
+    "short_description": "A photo of players on a football field, for cloud sports image recognition Standard plan.",
+    "price_per_month": 1650,
+    "ram_gb": 4,
+    "category": "football",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/football-match.jpg"
+  },
+  {
+    "tariff_name": "CLIP-football-03 · Облачный ИИ: Футбол",
+    "short_description": "A photo of players on a football field, for cloud sports image recognition Plus plan.",
+    "price_per_month": 1900,
+    "ram_gb": 8,
+    "category": "football",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/football-match.jpg"
+  },
+  {
+    "tariff_name": "CLIP-football-04 · Облачный ИИ: Футбол",
+    "short_description": "A photo of players on a football field, for cloud sports image recognition Pro plan.",
+    "price_per_month": 2150,
+    "ram_gb": 12,
+    "category": "football",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/football-match.jpg"
+  },
+  {
+    "tariff_name": "CLIP-football-05 · Облачный ИИ: Футбол",
+    "short_description": "A photo of players on a football field, for cloud sports image recognition Team plan.",
+    "price_per_month": 2400,
+    "ram_gb": 16,
+    "category": "football",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/football-match.jpg"
+  },
+  {
+    "tariff_name": "CLIP-football-06 · Облачный ИИ: Футбол",
+    "short_description": "A photo of players on a football field, for cloud sports image recognition Business plan.",
+    "price_per_month": 2650,
+    "ram_gb": 24,
+    "category": "football",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/football-match.jpg"
+  },
+  {
+    "tariff_name": "CLIP-football-07 · Облачный ИИ: Футбол",
+    "short_description": "A photo of players on a football field, for cloud sports image recognition Advanced plan.",
+    "price_per_month": 2900,
+    "ram_gb": 32,
+    "category": "football",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/football-match.jpg"
+  },
+  {
+    "tariff_name": "CLIP-football-08 · Облачный ИИ: Футбол",
+    "short_description": "A photo of players on a football field, for cloud sports image recognition Premium plan.",
+    "price_per_month": 3150,
+    "ram_gb": 48,
+    "category": "football",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/football-match.jpg"
+  },
+  {
+    "tariff_name": "CLIP-football-09 · Облачный ИИ: Футбол",
+    "short_description": "A photo of players on a football field, for cloud sports image recognition Enterprise plan.",
+    "price_per_month": 3400,
+    "ram_gb": 64,
+    "category": "football",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/football-match.jpg"
+  },
+  {
+    "tariff_name": "CLIP-football-10 · Облачный ИИ: Футбол",
+    "short_description": "A photo of players on a football field, for cloud sports image recognition Ultimate plan.",
+    "price_per_month": 3650,
+    "ram_gb": 96,
+    "category": "football",
+    "image_url": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/football-match.jpg"
+  }
+]
